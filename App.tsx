@@ -1,7 +1,7 @@
 import { NavigationContainer } from '@react-navigation/native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { useAuth } from 'hooks/useAuth';
-// import { AppNavigator } from 'navigation/AppNavigator';
+import { AppNavigator } from 'navigation/AppNavigator';
 import { AuthNavigator } from 'navigation/AuthNavigator';
 import { ActivityIndicator, View } from 'react-native';
 
@@ -16,11 +16,11 @@ export default function App() {
     );
   }
 
-  // return (
-  //   <SafeAreaProvider>
-  //     <NavigationContainer>
-  //       {user ? <AppNavigator /> : <AuthNavigator />}
-  //     </NavigationContainer>
-  //   </SafeAreaProvider>
-  // );
+  return (
+    <SafeAreaProvider>
+      <NavigationContainer>
+        {user ? <AppNavigator /> : <AuthNavigator />}
+      </NavigationContainer>
+    </SafeAreaProvider>
+  );
 }
