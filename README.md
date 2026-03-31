@@ -15,7 +15,7 @@
 - models/ # Классы данных
 - navigation/ # Навигация
 - screens/ # Экраны приложения
-- services/ # Подключение к Firebase
+- services/ # Подключение к Supabase
 - app.json # Конфигурация Expo
 - App.tsx # Точка входа
 - package.json # Зависимости
