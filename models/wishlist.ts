@@ -1,4 +1,3 @@
-import { DocumentData, Timestamp } from 'firebase/firestore';
 import { Item } from './item';
 
 export class Wishlist {
@@ -6,46 +5,33 @@ export class Wishlist {
   ownerId: string;
   title: string;
   description?: string;
-  eventDate?: Date;
+  eventDate?: string;
   coverImage?: string;
-  createdAt: Date;
-  updatedAt: Date;
-  items?: Item[];  // Список подарков (опционально)
+  createdAt: string;
+  updatedAt: string;
+  items?: Item[];
 
-  constructor(id: string, data: DocumentData) {
+  constructor(id: string, data: any) {
     this.id = id;
-    this.ownerId = data.ownerId || '';
+    this.ownerId = data.user_id || '';
     this.title = data.title || '';
     this.description = data.description;
-    this.coverImage = data.coverImage;
-    
-    // Конвертируем дату события
-    this.eventDate = data.eventDate instanceof Timestamp 
-      ? data.eventDate.toDate() 
-      : data.eventDate ? new Date(data.eventDate) : undefined;
-    
-    // Конвертируем даты создания/обновления
-    this.createdAt = data.createdAt instanceof Timestamp 
-      ? data.createdAt.toDate() 
-      : new Date(data.createdAt);
-    this.updatedAt = data.updatedAt instanceof Timestamp 
-      ? data.updatedAt.toDate() 
-      : new Date(data.updatedAt);
+    this.coverImage = data.cover_image;
+    this.eventDate = data.event_date;
+    this.createdAt = data.created_at;
+    this.updatedAt = data.updated_at;
   }
 
-  // Общее количество подарков
   get totalItems(): number {
     return this.items?.length || 0;
   }
 
-  // Количество доступных подарков (не забронированных)
   get availableItems(): number {
     return this.items?.filter(item => item.status === 'available').length || 0;
   }
 
-  // Форматированная дата события
   get formattedEventDate(): string {
     if (!this.eventDate) return 'Дата не указана';
-    return this.eventDate.toLocaleDateString('ru-RU');
+    return new Date(this.eventDate).toLocaleDateString('ru-RU');
   }
 }
