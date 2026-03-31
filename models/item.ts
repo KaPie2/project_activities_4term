@@ -1,6 +1,3 @@
-import { DocumentData, Timestamp } from 'firebase/firestore';
-
-// Тип статуса подарка
 export type ItemStatus = 'available' | 'reserved';
 
 export class Item {
@@ -12,37 +9,26 @@ export class Item {
   price?: number;
   productUrl?: string;
   status: ItemStatus;
-  reservedBy?: string;    // ID пользователя, кто забронировал
-  reservedAt?: Date;      // Дата бронирования
-  createdAt: Date;
-  updatedAt: Date;
+  reservedBy?: string;
+  reservedAt?: string;
+  createdAt: string;
+  updatedAt: string;
 
-  constructor(id: string, data: DocumentData) {
+  constructor(id: string, data: any) {
     this.id = id;
-    this.wishlistId = data.wishlistId || '';
+    this.wishlistId = data.wishlist_id || '';
     this.title = data.title || '';
     this.description = data.description;
-    this.imageUrl = data.imageUrl;
+    this.imageUrl = data.image_url;
     this.price = data.price;
-    this.productUrl = data.productUrl;
+    this.productUrl = data.product_url;
     this.status = data.status || 'available';
-    this.reservedBy = data.reservedBy;
-    
-    // Конвертируем дату бронирования
-    this.reservedAt = data.reservedAt instanceof Timestamp 
-      ? data.reservedAt.toDate() 
-      : data.reservedAt ? new Date(data.reservedAt) : undefined;
-    
-    // Конвертируем даты создания/обновления
-    this.createdAt = data.createdAt instanceof Timestamp 
-      ? data.createdAt.toDate() 
-      : new Date(data.createdAt);
-    this.updatedAt = data.updatedAt instanceof Timestamp 
-      ? data.updatedAt.toDate() 
-      : new Date(data.updatedAt);
+    this.reservedBy = data.reserved_by;
+    this.reservedAt = data.reserved_at;
+    this.createdAt = data.created_at;
+    this.updatedAt = data.updated_at;
   }
 
-  // Проверки статуса
   get isAvailable(): boolean {
     return this.status === 'available';
   }
@@ -51,9 +37,12 @@ export class Item {
     return this.status === 'reserved';
   }
 
-  // Форматированная цена
   get formattedPrice(): string {
     if (!this.price) return 'Цена не указана';
     return `${this.price.toLocaleString('ru-RU')} ₽`;
+  }
+
+  get formattedCreatedAt(): string {
+    return new Date(this.createdAt).toLocaleDateString('ru-RU');
   }
 }
