@@ -4,7 +4,11 @@ import { useNavigation } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { AuthStackParamList } from '../navigation/AuthNavigator';
 import { useAuth } from '../hooks/useAuth';
+import { Image, Dimensions, SafeAreaView, KeyboardAvoidingView, Platform, ScrollView } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
+import { BlurView } from 'expo-blur';
 
+const { width, height } = Dimensions.get('window');
 type LoginScreenNavigationProp = StackNavigationProp<AuthStackParamList, 'Login'>;
 
 export function LoginScreen() {
@@ -15,6 +19,8 @@ export function LoginScreen() {
   const [password, setPassword] = useState('');
   const [name, setName] = useState('');
   const [isLoginMode, setIsLoginMode] = useState(true);
+  const [showPassword, setShowPassword] = useState(false);
+  const [rememberMe, setRememberMe] = useState(false);
 
   const handleAuth = async () => {
     if (!email || !password) {
@@ -45,136 +51,226 @@ export function LoginScreen() {
 
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>PickMe</Text>
-      <Text style={styles.subtitle}>Список желаний</Text>
-      
-      <View style={styles.form}>
-        {!isLoginMode && (
-          <TextInput
-            style={styles.input}
-            placeholder="Имя"
-            value={name}
-            onChangeText={setName}
-            autoCapitalize="words"
-          />
-        )}
-        
-        <TextInput
-          style={styles.input}
-          placeholder="Email"
-          value={email}
-          onChangeText={setEmail}
-          autoCapitalize="none"
-          keyboardType="email-address"
+      {/* 1. ФОН: Картинка всегда на заднем плане */}
+      <View style={styles.headerImageContainer}>
+        <Image 
+          source={require('../assets/Leo.png')} 
+          style={styles.spotsImage}
+          resizeMode="cover"
         />
-        
-        <TextInput
-          style={styles.input}
-          placeholder="Пароль"
-          value={password}
-          onChangeText={setPassword}
-          secureTextEntry
-        />
-        
-        <TouchableOpacity 
-          style={[styles.button, loading && styles.buttonDisabled]}
-          onPress={handleAuth}
-          disabled={loading}
-        >
-          <Text style={styles.buttonText}>
-            {loading ? 'Загрузка...' : (isLoginMode ? 'Войти' : 'Зарегистрироваться')}
-          </Text>
-        </TouchableOpacity>
-        
-        {error && !loading && (
-          <Text style={styles.errorText}>{error}</Text>
-        )}
-        
-        <TouchableOpacity 
-          style={styles.switchModeButton}
-          onPress={() => setIsLoginMode(!isLoginMode)}
-        >
-          <Text style={styles.switchModeText}>
-            {isLoginMode ? 'Нет аккаунта? Зарегистрироваться' : 'Уже есть аккаунт? Войти'}
-          </Text>
-        </TouchableOpacity>
       </View>
-      
-      <Text style={styles.testInfo}>
-        Для тестирования используйте любой email и пароль (минимум 6 символов)
-      </Text>
+
+      {/* 2. КОНТЕНТ: Клавиатура и Скролл */}
+      <KeyboardAvoidingView 
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'} 
+        style={{ flex: 1 }}
+      >
+        <ScrollView 
+          bounces={true}
+          decelerationRate="normal"
+          alwaysBounceVertical={true} 
+          showsVerticalScrollIndicator={false}
+          contentContainerStyle={{ flexGrow: 1 }}
+          style={styles.scrollView}
+        >
+          {/* Белая форма (теперь прозрачная и с отступами) */}
+          <View style={styles.formContainer}>
+            <BlurView 
+              intensity={65} // Сила размытия (от 0 до 100)
+              tint="light"   // Оттенок: 'light', 'dark' или 'default'
+              style={StyleSheet.absoluteFill} // Растягивает размытие на всю плашку
+            />
+            <Text style={styles.title}>Вход</Text>
+            <View style={styles.divider} />
+
+            {/* Поле Email */}
+            <View style={styles.inputGroup}>
+              <Text style={styles.label}>Email</Text>
+              <TextInput 
+                style={styles.input} 
+                placeholder="your.email@mail.ru"
+                value={email}
+                onChangeText={setEmail}
+                autoCapitalize="none"
+              />
+            </View>
+
+            {/* Поле Пароль */}
+            <View style={styles.inputGroup}>
+              <Text style={styles.label}>Пароль</Text>
+              <View style={styles.passwordWrapper}>
+                <TextInput 
+                  style={styles.passwordInput} 
+                  secureTextEntry={!showPassword}
+                  placeholder="..................."
+                  value={password}
+                  onChangeText={setPassword}
+                />
+                <TouchableOpacity onPress={() => setShowPassword(!showPassword)}>
+                  <Ionicons name={showPassword ? "eye" : "eye-off"} size={24} color="#666" />
+                </TouchableOpacity>
+              </View>
+            </View>
+
+            {/* Запомнить меня */}
+            <TouchableOpacity style={styles.checkboxRow} onPress={() => setRememberMe(!rememberMe)}>
+              <View style={[styles.checkbox, rememberMe && styles.checkboxChecked]}>
+                 {rememberMe && <View style={styles.checkboxInner} />}
+              </View>
+              <Text style={styles.checkboxText}>Запомнить меня</Text>
+            </TouchableOpacity>
+
+            {/* Кнопка ДАЛЕЕ */}
+            <TouchableOpacity 
+              style={[styles.buttonMain, loading && { opacity: 0.7 }]} 
+              onPress={handleAuth}
+              disabled={loading}
+            >
+              <Text style={styles.buttonMainText}>{loading ? '...' : 'ДАЛЕЕ'}</Text>
+            </TouchableOpacity>
+
+            {/* Регистрация */}
+            <View style={styles.footer}>
+              <Text style={styles.footerText}>Нет аккаунта? </Text>
+              <TouchableOpacity onPress={() => navigation.navigate('Register')}>
+                <Text style={styles.footerLink}>Создать</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </ScrollView>
+      </KeyboardAvoidingView>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
+  container: { 
+    flex: 1, 
+    backgroundColor: '#FFF' 
+  },
+  headerImageContainer: {
+    height: height * 0.45,
+    top: 0,
+    left: 0,
+    right:0,
+    width: '100%',
+    position: 'absolute',
+  },
+  spotsImage: { 
+    width: '100%',
+    height: '100%',
+  },
+  scrollView: {
     flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    padding: 20,
-    backgroundColor: '#fff',
+    backgroundColor: 'transparent',
+  },
+  scrollContent: {
+    flexGrow: 1,
+    paddingTop: height * 0.32, // Сдвигаем начало формы вниз, чтобы было видно пятна
+  },
+  gradientOverlay: {
+    position: 'absolute',
+    bottom: 0,
+    width: '100%',
+    height: 100,
+    backgroundColor: 'transparent', 
+  },
+  formContainer: {
+    paddingHorizontal: 30,
+    paddingTop: 30,
+    marginTop: height * 0.28, // ВОТ ЭТО ОПУСКАЕТ ФОРМУ ВНИЗ (подбери под 15 Pro Max)
+    backgroundColor: 'rgba(255, 255, 255, 0.5)', // Или 'rgba(255, 255, 255, 0.96)' для легкой прозрачности
+    borderTopLeftRadius: 60,  // Скругление как в Figma
+    borderTopRightRadius: 60,          // Отступ внутри, чтобы "Вход" не прилипал к краю
+    minHeight: height * 0.7, // Чтобы белый фон доходил до самого низа экрана
+    overflow: 'hidden',
   },
   title: {
-    fontSize: 32,
-    fontWeight: 'bold',
-    marginBottom: 8,
+    fontSize: 42,
+    fontWeight: '500',
+    color: '#000',
+    marginBottom: 10,
+    marginTop: 25,
   },
-  subtitle: {
-    fontSize: 16,
-    color: '#666',
-    marginBottom: 48,
-  },
-  form: {
+  divider: {
+    height: 1,
+    backgroundColor: '#4e4d4d',
+    marginBottom: 25,
     width: '100%',
-    marginBottom: 30,
+  },
+  inputGroup: { 
+    marginBottom: 15 
+  },
+  label: { 
+    fontSize: 18, 
+    marginBottom: 8, 
+    color: '#000' 
   },
   input: {
-    backgroundColor: '#f8f9fa',
+    height: 60,
+    backgroundColor: '#F3F3F3',
+    borderRadius: 30,
+    paddingHorizontal: 25,
+    fontSize: 16,
     borderWidth: 1,
-    borderColor: '#e9ecef',
-    borderRadius: 8,
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    marginBottom: 12,
-    fontSize: 16,
+    borderColor: '#333',
   },
-  button: {
-    backgroundColor: '#007AFF',
-    paddingHorizontal: 24,
-    paddingVertical: 14,
-    borderRadius: 8,
-    marginBottom: 12,
-    width: '100%',
+  passwordWrapper: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#F3F3F3',
+    borderRadius: 30,
+    paddingHorizontal: 20,
+    borderWidth: 1,
+    borderColor: '#333',
+    height: 60,
+  },
+  passwordInput: { 
+    flex: 1, 
+    fontSize: 16, 
+    height: '100%' 
+  },
+  checkboxRow: { 
+    flexDirection: 'row', 
+    alignItems: 'center', 
+    marginTop: 10 
+  },
+  checkbox: {
+    width: 22,
+    height: 22,
+    borderRadius: 11,
+    borderWidth: 2,
+    borderColor: '#000',
+    marginRight: 10,
+    justifyContent: 'center',
     alignItems: 'center',
   },
-  buttonDisabled: {
-    backgroundColor: '#ccc',
+  checkboxChecked: { 
+    backgroundColor: '#FFF' 
   },
-  buttonText: {
-    color: '#fff',
-    fontSize: 16,
-    fontWeight: '600',
+  checkboxInner: { 
+    width: 10, 
+    height: 10, 
+    borderRadius: 5, 
+    backgroundColor: '#000' 
   },
-  switchModeButton: {
-    paddingVertical: 12,
+  checkboxText: { 
+    fontSize: 16, 
+    color: '#000' 
+  },
+  buttonMain: {
+    backgroundColor: '#1A1A1A',
+    height: 65,
+    borderRadius: 35,
+    justifyContent: 'center',
     alignItems: 'center',
+    marginTop: 65,
+    width: width * 0.65,
+    alignSelf: 'center',
   },
-  switchModeText: {
-    color: '#007AFF',
-    fontSize: 14,
-  },
-  errorText: {
-    color: '#ff4444',
-    textAlign: 'center',
-    marginTop: 8,
-    fontSize: 14,
-  },
-  testInfo: {
-    color: '#999',
-    fontSize: 12,
-    textAlign: 'center',
-    marginTop: 20,
-    fontStyle: 'italic',
-  },
+  buttonMainText: { color: '#FFF', fontSize: 18, fontWeight: 'bold', letterSpacing: 2 },
+  footer: { flexDirection: 'row', justifyContent: 'center', marginTop: 20 },
+  footerText: { fontSize: 16, color: '#333' },
+  footerLink: { fontSize: 16, color: '#B5D300', fontWeight: 'bold' },
 });
+

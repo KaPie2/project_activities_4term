@@ -1,9 +1,11 @@
 import { createStackNavigator } from '@react-navigation/stack';
+import { WelcomeScreen } from '../screens/Welcome'
 import { LoginScreen } from '../screens/Login';
 import { RegisterScreen } from '../screens/Register';
 
 // Типы для навигации (для TypeScript)
 export type AuthStackParamList = {
+  Welcome: undefined;
   Login: undefined;
   Register: undefined;
 };
@@ -18,6 +20,10 @@ export function AuthNavigator() {
         cardStyle: { backgroundColor: '#fff' }
       }}
     >
+      <Stack.Screen 
+        name="Welcome"
+        component={WelcomeScreen} 
+      />
       <Stack.Screen 
         name="Login" 
         component={LoginScreen} 
