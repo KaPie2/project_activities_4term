@@ -9,19 +9,38 @@ export function useAuth() {
 
   // Загрузка пользователя из таблицы users по email
   const fetchUserByEmail = async (email: string) => {
+    console.log('fetchUserByEmail: ищу пользователя с email', email);
+    
+    // Таймаут 5 секунд
+    const timeoutPromise = new Promise<null>((resolve) => {
+      setTimeout(() => {
+        console.log('fetchUserByEmail: таймаут 5 секунд');
+        resolve(null);
+      }, 5000);
+    });
+
     try {
-      const { data, error } = await supabase
+      const fetchPromise = supabase
         .from('users')
         .select('*')
         .eq('email', email)
-        .single();
+        .maybeSingle(); // Используем maybeSingle вместо single
+
+      // Гонка между запросом и таймаутом
+      const result = await Promise.race([
+        fetchPromise,
+        timeoutPromise.then(() => ({ data: null, error: { message: 'Timeout' } }))
+      ]);
+
+      const { data, error } = result as any;
 
       if (error) {
-        console.error('Ошибка загрузки пользователя:', error.message);
+        console.log('fetchUserByEmail: ошибка Supabase', error);
         return null;
       }
 
       if (data) {
+        console.log('fetchUserByEmail: найден пользователь', data);
         return new User(data.id, {
           email: data.email,
           name: data.name,
@@ -29,11 +48,14 @@ export function useAuth() {
           created_at: data.created_at,
           updated_at: data.updated_at,
         });
+      } else {
+        console.log('fetchUserByEmail: пользователь не найден');
+        return null;
       }
     } catch (err) {
-      console.error('Ошибка при загрузке пользователя:', err);
+      console.error('fetchUserByEmail: исключение', err);
+      return null;
     }
-    return null;
   };
 
   // Создание пользователя в таблице users
@@ -72,27 +94,44 @@ export function useAuth() {
 
   // Проверка сессии и загрузка пользователя
   useEffect(() => {
+    console.log('useAuth: useEffect запущен');
+    let timeoutId: NodeJS.Timeout;
+    
     const checkAuth = async () => {
       try {
+        console.log('useAuth: проверяю сессию...');
         const { data: { session } } = await supabase.auth.getSession();
+        console.log('useAuth: сессия получена', session);
         
         if (session?.user?.email) {
+          console.log('useAuth: email из сессии', session.user.email);
           const userData = await fetchUserByEmail(session.user.email);
+          console.log('useAuth: fetchUserByEmail вернул', userData);
           setUser(userData);
+        } else {
+          console.log('useAuth: нет сессии или email');
         }
       } catch (err) {
-        console.error('Ошибка проверки аутентификации:', err);
+        console.error('useAuth: ошибка проверки аутентификации:', err);
       } finally {
+        console.log('useAuth: finally, setLoading(false)');
         setLoading(false);
+        if (timeoutId) clearTimeout(timeoutId);
       }
     };
+
+    // Таймаут на 7 секунд
+    timeoutId = setTimeout(() => {
+      console.log('useAuth: таймаут проверки аутентификации');
+      setLoading(false);
+    }, 7000);
 
     checkAuth();
 
     // Подписка на изменения аутентификации
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
-        console.log('Auth event:', event);
+        console.log('useAuth: onAuthStateChange', event, session);
         
         if (session?.user?.email) {
           const userData = await fetchUserByEmail(session.user.email);
@@ -105,7 +144,11 @@ export function useAuth() {
       }
     );
 
-    return () => subscription.unsubscribe();
+    return () => {
+      console.log('useAuth: отписка');
+      if (timeoutId) clearTimeout(timeoutId);
+      subscription.unsubscribe();
+    };
   }, []);
 
   const signUp = async (email: string, password: string, name: string) => {
