@@ -1,13 +1,15 @@
 import { createStackNavigator } from '@react-navigation/stack';
-import { WelcomeScreen } from '../screens/Welcome'
+import { WelcomeScreen } from '../screens/Welcome';
 import { LoginScreen } from '../screens/Login';
 import { RegisterScreen } from '../screens/Register';
+import { EditProfileScreen } from '../screens/EditProfile';
 
-// Типы для навигации (для TypeScript)
+// Типы для навигации с параметрами
 export type AuthStackParamList = {
   Welcome: undefined;
   Login: undefined;
   Register: undefined;
+  EditProfile: undefined;
 };
 
 const Stack = createStackNavigator<AuthStackParamList>();
@@ -16,24 +18,14 @@ export function AuthNavigator() {
   return (
     <Stack.Navigator 
       screenOptions={{ 
-        headerShown: false,  // скрываем заголовок для экранов авторизации
+        headerShown: false,
         cardStyle: { backgroundColor: '#fff' }
       }}
     >
-      <Stack.Screen 
-        name="Welcome"
-        component={WelcomeScreen} 
-      />
-      <Stack.Screen 
-        name="Login" 
-        component={LoginScreen} 
-        options={{ title: 'Вход' }}
-      />
-      <Stack.Screen 
-        name="Register" 
-        component={RegisterScreen} 
-        options={{ title: 'Регистрация' }}
-      />
+      <Stack.Screen name="Welcome" component={WelcomeScreen} />
+      <Stack.Screen name="Login" component={LoginScreen} />
+      <Stack.Screen name="Register" component={RegisterScreen} />
+      <Stack.Screen name="EditProfile" component={EditProfileScreen} />
     </Stack.Navigator>
   );
 }

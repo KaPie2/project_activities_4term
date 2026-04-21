@@ -15,68 +15,58 @@ type RegisterScreenNavigationProp = StackNavigationProp<AuthStackParamList, 'Reg
 
 export function RegisterScreen() {
   const navigation = useNavigation<RegisterScreenNavigationProp>();
-  const { signUp, loading, error: authError } = useAuth();
+  const { signUp, loading } = useAuth();
   
-  // Состояния для полей
-  const [name, setName] = useState('');
+  const [login, setLogin] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [confirmPassword, setConfirmPassword] = useState('');
-  
-  // Локальная ошибка для отображения
-  const [localError, setLocalError] = useState<string | null>(null);
+  // const [pendingProfileData, setPendingProfileData] = useState<{ email: string; login: string } | null>(null);
 
   const handleRegister = async () => {
-    // Очищаем предыдущую ошибку
-    setLocalError(null);
-    
     // Валидация
-    if (!email || !password || !name || !confirmPassword) {
-      setLocalError('Заполните все поля');
+    if (!email || !password || !login || !confirmPassword) {
+      Alert.alert('Ошибка', 'Заполните все поля');
       return;
     }
     
     // Валидация email формата
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(email)) {
-      setLocalError('Введите корректный email (например: user@mail.com)');
+      Alert.alert('Ошибка', 'Введите корректный email');
+      return;
+    }
+    
+    // Валидация логина
+    const loginRegex = /^[a-zA-Z0-9_]{3,20}$/;
+    if (!loginRegex.test(login)) {
+      Alert.alert('Ошибка', 'Логин должен содержать 3-20 символов (буквы, цифры, _)');
       return;
     }
     
     if (password !== confirmPassword) {
-      setLocalError('Пароли не совпадают');
+      Alert.alert('Ошибка', 'Пароли не совпадают');
       return;
     }
 
     if (password.length < 6) {
-      setLocalError('Пароль должен быть не менее 6 символов');
+      Alert.alert('Ошибка', 'Пароль должен быть не менее 6 символов');
       return;
     }
-
-    if (name.length < 2) {
-      setLocalError('Имя должно содержать минимум 2 символа');
-      return;
-    }
-
-    console.log('Вызов signUp с:', { email, name });
     
-    // Вызываем signUp из useAuth
-    const result = await signUp(email, password, name);
-    
-    console.log('Результат signUp:', result);
+    // Регистрация
+    const result = await signUp(email, password, login);
     
     if (result.success) {
-      Alert.alert(
-        'Успех!', 
-        'Регистрация прошла успешно! Проверьте вашу почту для подтверждения.',
-        [{ text: 'OK', onPress: () => navigation.replace('Login') }]
-      );
+      // ✅ ДАННЫЕ УЖЕ В БД! Просто переходим на EditProfile
+      navigation.replace('EditProfile');
     } else {
-      setLocalError(result.error);
+      Alert.alert('Ошибка регистрации', result.error);
     }
   };
+
 
   return (
     <View style={styles.container}>
@@ -105,18 +95,23 @@ export function RegisterScreen() {
             <Text style={styles.title}>Регистрация</Text>
             <View style={styles.divider} />
 
+            {/* Поле Логин */}
             <View style={styles.inputGroup}>
-              <Text style={styles.label}>Имя</Text>
-              <TextInput 
-                style={styles.input} 
-                placeholder="Ваше имя"
-                value={name}
-                onChangeText={setName}
-                autoCapitalize="words"
-                editable={!loading}
-              />
+              <Text style={styles.label}>Логин</Text>
+              <View style={styles.loginWrapper}>
+                <Text style={styles.atSymbol}>@</Text>
+                <TextInput 
+                  style={styles.loginInput}
+                  placeholder="username"
+                  value={login}
+                  onChangeText={(text) => setLogin(text.toLowerCase().replace(/[^a-z0-9_]/g, ''))}
+                  autoCapitalize="none"
+                  editable={!loading}
+                />
+              </View>
             </View>
 
+            {/* Поле Email */}
             <View style={styles.inputGroup}>
               <Text style={styles.label}>Email</Text>
               <TextInput 
@@ -130,6 +125,7 @@ export function RegisterScreen() {
               />
             </View>
 
+            {/* Поле Пароль */}
             <View style={styles.inputGroup}>
               <Text style={styles.label}>Пароль</Text>
               <View style={styles.passwordWrapper}>
@@ -147,6 +143,7 @@ export function RegisterScreen() {
               </View>
             </View>
 
+            {/* Поле Подтверждение пароля */}
             <View style={styles.inputGroup}>
               <Text style={styles.label}>Подтвердите пароль</Text>
               <View style={styles.passwordWrapper}>
@@ -164,20 +161,13 @@ export function RegisterScreen() {
               </View>
             </View>
 
-            {/* Отображение ошибки */}
-            {(localError || authError) && (
-              <View style={styles.errorContainer}>
-                <Text style={styles.errorText}>{localError || authError}</Text>
-              </View>
-            )}
-
             <TouchableOpacity 
               style={[styles.buttonMain, loading && styles.buttonDisabled]} 
               onPress={handleRegister}
               disabled={loading}
             >
               <Text style={styles.buttonMainText}>
-                {loading ? 'РЕГИСТРАЦИЯ...' : 'СОЗДАТЬ'}
+                {loading ? 'РЕГИСТРАЦИЯ...' : 'ДАЛЕЕ'}
               </Text>
             </TouchableOpacity>
 
@@ -238,6 +228,25 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: '#333',
   },
+  loginWrapper: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#F3F3F3',
+    borderRadius: 30,
+    paddingHorizontal: 20,
+    borderWidth: 1,
+    borderColor: '#333',
+    height: 60,
+  },
+  atSymbol: {
+    fontSize: 18,
+    color: '#666',
+    marginRight: 5,
+  },
+  loginInput: {
+    flex: 1,
+    fontSize: 16,
+  },
   passwordWrapper: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -267,18 +276,4 @@ const styles = StyleSheet.create({
   footer: { flexDirection: 'row', justifyContent: 'center', marginTop: 20, marginBottom: 40 },
   footerText: { fontSize: 16, color: '#333' },
   footerLink: { fontSize: 16, color: '#B5D300', fontWeight: 'bold', textDecorationLine: 'underline' },
-  errorContainer: {
-    backgroundColor: '#FFE5E5',
-    borderRadius: 10,
-    padding: 12,
-    marginTop: 10,
-    marginBottom: 10,
-    borderWidth: 1,
-    borderColor: '#FF0000',
-  },
-  errorText: {
-    color: '#FF0000',
-    fontSize: 14,
-    textAlign: 'center',
-  },
 });
