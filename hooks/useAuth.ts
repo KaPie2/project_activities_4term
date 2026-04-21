@@ -7,40 +7,21 @@ export function useAuth() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  // Загрузка пользователя из таблицы users по email
-  const fetchUserByEmail = async (email: string) => {
-    console.log('fetchUserByEmail: ищу пользователя с email', email);
-    
-    // Таймаут 5 секунд
-    const timeoutPromise = new Promise<null>((resolve) => {
-      setTimeout(() => {
-        console.log('fetchUserByEmail: таймаут 5 секунд');
-        resolve(null);
-      }, 5000);
-    });
-
+  // Загрузка пользователя из таблицы users по ID
+  const fetchUserById = async (id: string) => {
     try {
-      const fetchPromise = supabase
+      const { data, error } = await supabase
         .from('users')
         .select('*')
-        .eq('email', email)
-        .maybeSingle(); // Используем maybeSingle вместо single
-
-      // Гонка между запросом и таймаутом
-      const result = await Promise.race([
-        fetchPromise,
-        timeoutPromise.then(() => ({ data: null, error: { message: 'Timeout' } }))
-      ]);
-
-      const { data, error } = result as any;
+        .eq('id', id)
+        .maybeSingle();
 
       if (error) {
-        console.log('fetchUserByEmail: ошибка Supabase', error);
+        console.error('fetchUserById error:', error);
         return null;
       }
 
       if (data) {
-        console.log('fetchUserByEmail: найден пользователь', data);
         return new User(data.id, {
           email: data.email,
           name: data.name,
@@ -48,22 +29,21 @@ export function useAuth() {
           created_at: data.created_at,
           updated_at: data.updated_at,
         });
-      } else {
-        console.log('fetchUserByEmail: пользователь не найден');
-        return null;
       }
+      return null;
     } catch (err) {
-      console.error('fetchUserByEmail: исключение', err);
+      console.error('fetchUserById exception:', err);
       return null;
     }
   };
 
   // Создание пользователя в таблице users
-  const createUserInDB = async (email: string, name: string) => {
+  const createUserInDB = async (authUserId: string, email: string, name: string) => {
     try {
       const newUser = {
-        email,
-        name,
+        id: authUserId,
+        email: email,
+        name: name,
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),
       };
@@ -79,6 +59,7 @@ export function useAuth() {
         return null;
       }
 
+      console.log('Пользователь успешно создан в БД:', data);
       return new User(data.id, {
         email: data.email,
         name: data.name,
@@ -94,74 +75,102 @@ export function useAuth() {
 
   // Проверка сессии и загрузка пользователя
   useEffect(() => {
-    console.log('useAuth: useEffect запущен');
-    let timeoutId: NodeJS.Timeout;
-    
+    let isMounted = true;
+
     const checkAuth = async () => {
       try {
-        console.log('useAuth: проверяю сессию...');
-        const { data: { session } } = await supabase.auth.getSession();
-        console.log('useAuth: сессия получена', session);
+        setLoading(true);
         
-        if (session?.user?.email) {
-          console.log('useAuth: email из сессии', session.user.email);
-          const userData = await fetchUserByEmail(session.user.email);
-          console.log('useAuth: fetchUserByEmail вернул', userData);
-          setUser(userData);
+        const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+        
+        if (sessionError) {
+          console.error('Session error:', sessionError);
+          if (isMounted) setUser(null);
+          return;
+        }
+
+        if (session?.user) {
+          const userData = await fetchUserById(session.user.id);
+          
+          if (isMounted) {
+            if (userData) {
+              setUser(userData);
+            } else {
+              const email = session.user.email;
+              const name = session.user.user_metadata?.name || email?.split('@')[0] || 'User';
+              
+              if (email) {
+                const newUser = await createUserInDB(session.user.id, email, name);
+                setUser(newUser);
+              }
+            }
+          }
         } else {
-          console.log('useAuth: нет сессии или email');
+          if (isMounted) setUser(null);
         }
       } catch (err) {
-        console.error('useAuth: ошибка проверки аутентификации:', err);
+        console.error('checkAuth error:', err);
+        if (isMounted) setError('Ошибка аутентификации');
       } finally {
-        console.log('useAuth: finally, setLoading(false)');
-        setLoading(false);
-        if (timeoutId) clearTimeout(timeoutId);
+        if (isMounted) setLoading(false);
       }
     };
 
-    // Таймаут на 7 секунд
-    timeoutId = setTimeout(() => {
-      console.log('useAuth: таймаут проверки аутентификации');
-      setLoading(false);
-    }, 7000);
-
     checkAuth();
 
-    // Подписка на изменения аутентификации
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
-        console.log('useAuth: onAuthStateChange', event, session);
+        console.log('Auth state change:', event, session?.user?.email);
         
-        if (session?.user?.email) {
-          const userData = await fetchUserByEmail(session.user.email);
-          setUser(userData);
-          setError(null);
+        if (session?.user) {
+          const userData = await fetchUserById(session.user.id);
+          
+          if (isMounted) {
+            if (userData) {
+              setUser(userData);
+            } else if (event === 'SIGNED_IN') {
+              const email = session.user.email;
+              const name = session.user.user_metadata?.name || email?.split('@')[0] || 'User';
+              
+              if (email) {
+                const newUser = await createUserInDB(session.user.id, email, name);
+                setUser(newUser);
+              }
+            }
+            setError(null);
+          }
         } else {
-          setUser(null);
+          if (isMounted) {
+            setUser(null);
+          }
         }
-        setLoading(false);
+        
+        if (isMounted) {
+          setLoading(false);
+        }
       }
     );
 
     return () => {
-      console.log('useAuth: отписка');
-      if (timeoutId) clearTimeout(timeoutId);
+      isMounted = false;
       subscription.unsubscribe();
     };
   }, []);
 
+  // Регистрация - проверка паролей происходит в компоненте!
   const signUp = async (email: string, password: string, name: string) => {
     setLoading(true);
     setError(null);
     
     try {
-      // 1. Регистрация в Supabase Auth
+      // 1. Регистрация в Supabase Auth (пароль хэшируется автоматически)
       const { data: authData, error: authError } = await supabase.auth.signUp({
         email,
         password,
         options: {
-          data: { name },
+          data: { 
+            name: name 
+          },
         },
       });
 
@@ -169,9 +178,12 @@ export function useAuth() {
       if (!authData.user) throw new Error('Регистрация не удалась');
 
       // 2. Создание пользователя в таблице users
-      const userInDB = await createUserInDB(email, name);
+      const userInDB = await createUserInDB(authData.user.id, email, name);
       
-      setUser(userInDB);
+      if (userInDB) {
+        setUser(userInDB);
+      }
+      
       return { success: true, user: userInDB };
     } catch (err: any) {
       const errorMsg = err.message || 'Ошибка регистрации';
@@ -182,6 +194,7 @@ export function useAuth() {
     }
   };
 
+  // Вход
   const signIn = async (email: string, password: string) => {
     setLoading(true);
     setError(null);
@@ -195,10 +208,14 @@ export function useAuth() {
       if (authError) throw new Error(authError.message);
       if (!data.user) throw new Error('Вход не удался');
 
-      // Загрузка пользователя из БД
-      const userData = await fetchUserByEmail(email);
-      setUser(userData);
+      let userData = await fetchUserById(data.user.id);
       
+      if (!userData && data.user.email) {
+        const name = data.user.user_metadata?.name || email.split('@')[0];
+        userData = await createUserInDB(data.user.id, email, name);
+      }
+      
+      setUser(userData);
       return { success: true, user: userData };
     } catch (err: any) {
       const errorMsg = err.message || 'Ошибка входа';
@@ -209,6 +226,7 @@ export function useAuth() {
     }
   };
 
+  // Выход
   const signOut = async () => {
     setLoading(true);
     setError(null);

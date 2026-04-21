@@ -1,6 +1,7 @@
 import { createStackNavigator } from '@react-navigation/stack';
-import { View, Text, Button, StyleSheet } from 'react-native';
+import { View, Text, Button, StyleSheet, TouchableOpacity } from 'react-native';
 import { useAuth } from '../hooks/useAuth';
+import { Ionicons } from '@expo/vector-icons';
 
 // Типы для навигации
 export type AppStackParamList = {
@@ -61,6 +62,7 @@ function ProfileScreen() {
           <Text>Email: {user.email}</Text>
           <Text>ID: {user.id}</Text>
           <Text>Зарегистрирован: {new Date(user.createdAt).toLocaleDateString('ru-RU')}</Text>
+          {user.avatarUrl && <Text>Аватар: {user.avatarUrl}</Text>}
         </View>
       )}
     </View>
@@ -90,18 +92,28 @@ export function AppNavigator() {
         },
       }}
     >
-      <Stack.Screen 
-        name="Home" 
+      <Stack.Screen
+        name="Home"
         component={HomeScreen}
-        options={{ title: 'Главная' }}
+        options={({ navigation }) => ({
+          title: 'Главная',
+          headerRight: () => (
+            <TouchableOpacity
+              style={{ marginRight: 15 }}
+              onPress={() => navigation.navigate('Profile')}
+            >
+              <Ionicons name="person-circle-outline" size={28} color="#333" />
+            </TouchableOpacity>
+          ),
+        })}
       />
-      <Stack.Screen 
-        name="Profile" 
+      <Stack.Screen
+        name="Profile"
         component={ProfileScreen}
         options={{ title: 'Профиль' }}
       />
-      <Stack.Screen 
-        name="Wishlists" 
+      <Stack.Screen
+        name="Wishlists"
         component={WishlistsScreen}
         options={{ title: 'Мои вишлисты' }}
       />

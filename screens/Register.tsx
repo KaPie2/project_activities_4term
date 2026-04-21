@@ -8,42 +8,78 @@ import { StackNavigationProp } from '@react-navigation/stack';
 import { AuthStackParamList } from '../navigation/AuthNavigator';
 import { BlurView } from 'expo-blur';
 import { Ionicons } from '@expo/vector-icons';
+import { useAuth } from '../hooks/useAuth';
 
 const { width, height } = Dimensions.get('window');
 type RegisterScreenNavigationProp = StackNavigationProp<AuthStackParamList, 'Register'>;
 
 export function RegisterScreen() {
   const navigation = useNavigation<RegisterScreenNavigationProp>();
+  const { signUp, loading, error: authError } = useAuth();
   
   // Состояния для полей
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
-  const [confirmPassword, setConfirmPassword] = useState(''); // Добавь это
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [confirmPassword, setConfirmPassword] = useState('');
+  
+  // Локальная ошибка для отображения
+  const [localError, setLocalError] = useState<string | null>(null);
+
   const handleRegister = async () => {
+    // Очищаем предыдущую ошибку
+    setLocalError(null);
+    
+    // Валидация
     if (!email || !password || !name || !confirmPassword) {
-      Alert.alert('Ошибка', 'Заполните все поля');
+      setLocalError('Заполните все поля');
+      return;
+    }
+    
+    // Валидация email формата
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      setLocalError('Введите корректный email (например: user@mail.com)');
       return;
     }
     
     if (password !== confirmPassword) {
-      Alert.alert('Ошибка', 'Пароли не совпадают');
+      setLocalError('Пароли не совпадают');
       return;
     }
 
     if (password.length < 6) {
-      Alert.alert('Ошибка', 'Пароль должен быть не менее 6 символов');
+      setLocalError('Пароль должен быть не менее 6 символов');
       return;
     }
 
-    // Здесь вызов твоего метода signUp...
-    console.log('Регистрация...', name, email);
+    if (name.length < 2) {
+      setLocalError('Имя должно содержать минимум 2 символа');
+      return;
+    }
+
+    console.log('Вызов signUp с:', { email, name });
+    
+    // Вызываем signUp из useAuth
+    const result = await signUp(email, password, name);
+    
+    console.log('Результат signUp:', result);
+    
+    if (result.success) {
+      Alert.alert(
+        'Успех!', 
+        'Регистрация прошла успешно! Проверьте вашу почту для подтверждения.',
+        [{ text: 'OK', onPress: () => navigation.replace('Login') }]
+      );
+    } else {
+      setLocalError(result.error);
+    }
   };
 
   return (
     <View style={styles.container}>
-      {/* 1. ФОН: Пятна сверху */}
       <View style={styles.headerImageContainer}>
         <Image 
           source={require('../assets/Leo_lines.png')} 
@@ -61,7 +97,6 @@ export function RegisterScreen() {
           showsVerticalScrollIndicator={false}
           contentContainerStyle={styles.scrollContent}
         >
-          {/* Отступ сверху до формы */}
           <View style={{ height: height * 0.25 }} />
 
           <View style={styles.formContainer}>
@@ -70,7 +105,6 @@ export function RegisterScreen() {
             <Text style={styles.title}>Регистрация</Text>
             <View style={styles.divider} />
 
-            {/* Поле Имя */}
             <View style={styles.inputGroup}>
               <Text style={styles.label}>Имя</Text>
               <TextInput 
@@ -79,10 +113,10 @@ export function RegisterScreen() {
                 value={name}
                 onChangeText={setName}
                 autoCapitalize="words"
+                editable={!loading}
               />
             </View>
 
-            {/* Поле Email */}
             <View style={styles.inputGroup}>
               <Text style={styles.label}>Email</Text>
               <TextInput 
@@ -92,10 +126,10 @@ export function RegisterScreen() {
                 onChangeText={setEmail}
                 autoCapitalize="none"
                 keyboardType="email-address"
+                editable={!loading}
               />
             </View>
 
-            {/* Поле Пароль */}
             <View style={styles.inputGroup}>
               <Text style={styles.label}>Пароль</Text>
               <View style={styles.passwordWrapper}>
@@ -105,6 +139,7 @@ export function RegisterScreen() {
                   placeholder="Минимум 6 символов"
                   value={password}
                   onChangeText={setPassword}
+                  editable={!loading}
                 />
                 <TouchableOpacity onPress={() => setShowPassword(!showPassword)}>
                   <Ionicons name={showPassword ? "eye" : "eye-off"} size={24} color="#666" />
@@ -112,33 +147,43 @@ export function RegisterScreen() {
               </View>
             </View>
 
-            {/* Поле Подтверждение пароля */}
             <View style={styles.inputGroup}>
               <Text style={styles.label}>Подтвердите пароль</Text>
               <View style={styles.passwordWrapper}>
                 <TextInput 
                   style={styles.passwordInput} 
-                  secureTextEntry={!showPassword}
+                  secureTextEntry={!showConfirmPassword}
                   placeholder="Повторите пароль"
                   value={confirmPassword}
                   onChangeText={setConfirmPassword}
+                  editable={!loading}
                 />
-                {/* Иконку глаза можно оставить только в первом поле или добавить сюда тоже */}
+                <TouchableOpacity onPress={() => setShowConfirmPassword(!showConfirmPassword)}>
+                  <Ionicons name={showConfirmPassword ? "eye" : "eye-off"} size={24} color="#666" />
+                </TouchableOpacity>
               </View>
             </View>
 
-            {/* Кнопка СОЗДАТЬ */}
+            {/* Отображение ошибки */}
+            {(localError || authError) && (
+              <View style={styles.errorContainer}>
+                <Text style={styles.errorText}>{localError || authError}</Text>
+              </View>
+            )}
+
             <TouchableOpacity 
-              style={styles.buttonMain} 
-              onPress={() => console.log('Регистрация:', name, email)} //Дописать реализацию
+              style={[styles.buttonMain, loading && styles.buttonDisabled]} 
+              onPress={handleRegister}
+              disabled={loading}
             >
-              <Text style={styles.buttonMainText}>СОЗДАТЬ</Text>
+              <Text style={styles.buttonMainText}>
+                {loading ? 'РЕГИСТРАЦИЯ...' : 'СОЗДАТЬ'}
+              </Text>
             </TouchableOpacity>
 
-            {/* Переход назад */}
             <View style={styles.footer}>
               <Text style={styles.footerText}>Уже есть аккаунт? </Text>
-              <TouchableOpacity onPress={() => navigation.goBack()}>
+              <TouchableOpacity onPress={() => navigation.goBack()} disabled={loading}>
                 <Text style={styles.footerLink}>Войти</Text>
               </TouchableOpacity>
             </View>
@@ -163,7 +208,7 @@ const styles = StyleSheet.create({
     flex: 1,
     paddingHorizontal: 30,
     paddingTop: 40,
-    backgroundColor: 'rgba(255, 255, 255, 0.45)', // Прозрачность для Blur
+    backgroundColor: 'rgba(255, 255, 255, 0.45)',
     borderTopLeftRadius: 45,
     borderTopRightRadius: 45,
     minHeight: height * 0.8,
@@ -214,8 +259,26 @@ const styles = StyleSheet.create({
     marginTop: 30,
     alignSelf: 'center',
   },
+  buttonDisabled: {
+    backgroundColor: '#999',
+    opacity: 0.7,
+  },
   buttonMainText: { color: '#FFF', fontSize: 18, fontWeight: 'bold', letterSpacing: 2 },
   footer: { flexDirection: 'row', justifyContent: 'center', marginTop: 20, marginBottom: 40 },
   footerText: { fontSize: 16, color: '#333' },
   footerLink: { fontSize: 16, color: '#B5D300', fontWeight: 'bold', textDecorationLine: 'underline' },
+  errorContainer: {
+    backgroundColor: '#FFE5E5',
+    borderRadius: 10,
+    padding: 12,
+    marginTop: 10,
+    marginBottom: 10,
+    borderWidth: 1,
+    borderColor: '#FF0000',
+  },
+  errorText: {
+    color: '#FF0000',
+    fontSize: 14,
+    textAlign: 'center',
+  },
 });
