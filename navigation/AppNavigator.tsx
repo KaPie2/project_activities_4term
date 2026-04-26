@@ -1,36 +1,26 @@
 import { createStackNavigator } from '@react-navigation/stack';
-import { View, Text, Button, StyleSheet, TouchableOpacity, Alert } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Alert } from 'react-native';
 import { useAuth } from '../hooks/useAuth';
 import { Ionicons } from '@expo/vector-icons';
+import { EditProfileScreen } from '../screens/EditProfile';
 
-// Типы для навигации
 export type AppStackParamList = {
   Home: undefined;
   Profile: undefined;
   Wishlists: undefined;
+  EditProfile: undefined;
 };
 
 const Stack = createStackNavigator<AppStackParamList>();
 
-// Главный домашний экран
 function HomeScreen({ navigation }: any) {
   const { user, signOut } = useAuth();
   
   const handleSignOut = async () => {
-    Alert.alert(
-      'Выход',
-      'Вы уверены, что хотите выйти?',
-      [
-        { text: 'Отмена', style: 'cancel' },
-        { 
-          text: 'Выйти', 
-          style: 'destructive',
-          onPress: async () => {
-            await signOut();
-          }
-        }
-      ]
-    );
+    Alert.alert('Выход', 'Вы уверены, что хотите выйти?', [
+      { text: 'Отмена', style: 'cancel' },
+      { text: 'Выйти', style: 'destructive', onPress: async () => { await signOut(); } }
+    ]);
   };
   
   return (
@@ -47,24 +37,13 @@ function HomeScreen({ navigation }: any) {
       )}
       
       <View style={styles.buttonContainer}>
-        <TouchableOpacity 
-          style={[styles.button, styles.buttonPrimary]}
-          onPress={() => navigation.navigate('Wishlists')}
-        >
+        <TouchableOpacity style={[styles.button, styles.buttonPrimary]} onPress={() => navigation.navigate('Wishlists')}>
           <Text style={styles.buttonText}>Мои вишлисты</Text>
         </TouchableOpacity>
-        
-        <TouchableOpacity 
-          style={[styles.button, styles.buttonSecondary]}
-          onPress={() => navigation.navigate('Profile')}
-        >
+        <TouchableOpacity style={[styles.button, styles.buttonSecondary]} onPress={() => navigation.navigate('Profile')}>
           <Text style={styles.buttonText}>Профиль</Text>
         </TouchableOpacity>
-        
-        <TouchableOpacity 
-          style={[styles.button, styles.buttonDanger]}
-          onPress={handleSignOut}
-        >
+        <TouchableOpacity style={[styles.button, styles.buttonDanger]} onPress={handleSignOut}>
           <Text style={styles.buttonText}>Выйти</Text>
         </TouchableOpacity>
       </View>
@@ -72,13 +51,17 @@ function HomeScreen({ navigation }: any) {
   );
 }
 
-// Экран профиля
-function ProfileScreen() {
+function ProfileScreen({ navigation }: any) {
   const { user } = useAuth();
   
   return (
     <View style={styles.container}>
       <Text style={styles.title}>Профиль</Text>
+      
+      <TouchableOpacity style={styles.editButton} onPress={() => navigation.navigate('EditProfile')}>
+        <Text style={styles.editButtonText}>Редактировать профиль</Text>
+      </TouchableOpacity>
+      
       {user && (
         <View style={styles.userInfo}>
           <View style={styles.avatarPlaceholder}>
@@ -86,16 +69,12 @@ function ProfileScreen() {
           </View>
           <Text style={styles.infoLabel}>Имя:</Text>
           <Text style={styles.infoValue}>{user.name || 'Не указано'}</Text>
-          
           <Text style={styles.infoLabel}>Логин:</Text>
           <Text style={styles.infoValue}>@{user.login || 'Не указан'}</Text>
-          
           <Text style={styles.infoLabel}>Email:</Text>
           <Text style={styles.infoValue}>{user.email}</Text>
-          
           <Text style={styles.infoLabel}>Дата рождения:</Text>
           <Text style={styles.infoValue}>{user.birthDate || 'Не указана'}</Text>
-          
           <Text style={styles.infoLabel}>Дата регистрации:</Text>
           <Text style={styles.infoValue}>{new Date(user.created_at).toLocaleDateString('ru-RU')}</Text>
         </View>
@@ -104,10 +83,7 @@ function ProfileScreen() {
   );
 }
 
-// Экран вишлистов
 function WishlistsScreen() {
-  const { user } = useAuth();
-  
   return (
     <View style={styles.container}>
       <Text style={styles.title}>Мои вишлисты</Text>
@@ -123,8 +99,12 @@ function WishlistsScreen() {
 }
 
 export function AppNavigator() {
+  const { user } = useAuth();
+  const needsProfile = !user?.name || !user?.birthDate;
+
   return (
     <Stack.Navigator
+      key={needsProfile ? 'profile' : 'app'}  // ✅ КЛЮЧ - ЗАСТАВЛЯЕТ НАВИГАТОР ПЕРЕСОЗДАТЬСЯ
       screenOptions={{
         headerShown: true,
         headerStyle: {
@@ -138,31 +118,46 @@ export function AppNavigator() {
         },
       }}
     >
-      <Stack.Screen
-        name="Home"
-        component={HomeScreen}
-        options={({ navigation }) => ({
-          title: 'Главная',
-          headerRight: () => (
-            <TouchableOpacity
-              style={{ marginRight: 15 }}
-              onPress={() => navigation.navigate('Profile')}
-            >
-              <Ionicons name="person-circle-outline" size={28} color="#333" />
-            </TouchableOpacity>
-          ),
-        })}
-      />
-      <Stack.Screen
-        name="Profile"
-        component={ProfileScreen}
-        options={{ title: 'Профиль' }}
-      />
-      <Stack.Screen
-        name="Wishlists"
-        component={WishlistsScreen}
-        options={{ title: 'Мои вишлисты' }}
-      />
+      {needsProfile ? (
+        <Stack.Screen
+          name="EditProfile"
+          component={EditProfileScreen}
+          options={{ title: 'Заполните профиль' }}
+        />
+      ) : (
+        <>
+          <Stack.Screen
+            name="Home"
+            component={HomeScreen}
+            options={({ navigation }) => ({
+              title: 'Главная',
+              headerRight: () => (
+                <TouchableOpacity
+                  style={{ marginRight: 15 }}
+                  onPress={() => navigation.navigate('Profile')}
+                >
+                  <Ionicons name="person-circle-outline" size={28} color="#333" />
+                </TouchableOpacity>
+              ),
+            })}
+          />
+          <Stack.Screen
+            name="Profile"
+            component={ProfileScreen}
+            options={{ title: 'Профиль' }}
+          />
+          <Stack.Screen
+            name="Wishlists"
+            component={WishlistsScreen}
+            options={{ title: 'Мои вишлисты' }}
+          />
+          <Stack.Screen
+            name="EditProfile"
+            component={EditProfileScreen}
+            options={{ title: 'Редактирование профиля' }}
+          />
+        </>
+      )}
     </Stack.Navigator>
   );
 }
@@ -254,4 +249,6 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: '#999',
   },
+  editButton: { backgroundColor: '#B5D300', paddingVertical: 10, paddingHorizontal: 20, borderRadius: 25, alignSelf: 'center', marginBottom: 20 },
+  editButtonText: { color: '#1A1A1A', fontSize: 14, fontWeight: '600' },
 });

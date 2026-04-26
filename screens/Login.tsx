@@ -22,32 +22,44 @@ export function LoginScreen() {
   const [showPassword, setShowPassword] = useState(false);
   const [rememberMe, setRememberMe] = useState(false);
 
-  const handleAuth = async () => {
+  const handleLogin = async () => {
     if (!email || !password) {
       Alert.alert('Ошибка', 'Введите email и пароль');
       return;
     }
 
-    if (!isLoginMode && !name) {
-      Alert.alert('Ошибка', 'Введите имя');
-      return;
-    }
-
-    if (isLoginMode) {
-      const result = await signIn(email, password);
-      if (!result.success) {
-        Alert.alert('Ошибка входа', result.error || 'Неверный email или пароль');
-      }
-    } else {
-      const result = await signUp(email, password, name);
-      if (!result.success) {
-        Alert.alert('Ошибка регистрации', result.error || 'Не удалось зарегистрироваться');
-      } else {
-        Alert.alert('Успешно', 'Регистрация прошла успешно!');
-        setIsLoginMode(true); // Переключаемся на режим входа
-      }
+    const result = await signIn(email, password);
+    if (!result.success) {
+      Alert.alert('Ошибка входа', result.error || 'Неверный email или пароль');
     }
   };
+
+  // const handleAuth = async () => {
+  //   if (!email || !password) {
+  //     Alert.alert('Ошибка', 'Введите email и пароль');
+  //     return;
+  //   }
+
+  //   if (!isLoginMode && !name) {
+  //     Alert.alert('Ошибка', 'Введите имя');
+  //     return;
+  //   }
+
+  //   if (isLoginMode) {
+  //     const result = await signIn(email, password);
+  //     if (!result.success) {
+  //       Alert.alert('Ошибка входа', result.error || 'Неверный email или пароль');
+  //     }
+  //   } else {
+  //     const result = await signUp(email, password, name);
+  //     if (!result.success) {
+  //       Alert.alert('Ошибка регистрации', result.error || 'Не удалось зарегистрироваться');
+  //     } else {
+  //       Alert.alert('Успешно', 'Регистрация прошла успешно!');
+  //       setIsLoginMode(true); // Переключаемся на режим входа
+  //     }
+  //   }
+  // };
 
   return (
     <View style={styles.container}>
@@ -123,7 +135,7 @@ export function LoginScreen() {
             {/* Кнопка ДАЛЕЕ */}
             <TouchableOpacity 
               style={[styles.buttonMain, loading && { opacity: 0.7 }]} 
-              onPress={handleAuth}
+              onPress={handleLogin}
               disabled={loading}
             >
               <Text style={styles.buttonMainText}>{loading ? '...' : 'ДАЛЕЕ'}</Text>
@@ -273,4 +285,3 @@ const styles = StyleSheet.create({
   footerText: { fontSize: 16, color: '#333' },
   footerLink: { fontSize: 16, color: '#B5D300', fontWeight: 'bold' },
 });
-

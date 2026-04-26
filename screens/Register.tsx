@@ -60,9 +60,9 @@ export function RegisterScreen() {
     const result = await signUp(email, password, login);
     
     if (result.success) {
-      // ✅ ДАННЫЕ УЖЕ В БД! Просто переходим на EditProfile
-      navigation.replace('EditProfile');
-    } else {
+    //   // ✅ ДАННЫЕ УЖЕ В БД! Просто переходим на EditProfile
+    //   navigation.replace('EditProfile');
+    // } else {
       Alert.alert('Ошибка регистрации', result.error);
     }
   };

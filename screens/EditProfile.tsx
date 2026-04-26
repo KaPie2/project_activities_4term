@@ -5,14 +5,14 @@ import {
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
-import { AuthStackParamList } from '../navigation/AuthNavigator';
+import { AppStackParamList } from '../navigation/AppNavigator';
 import { BlurView } from 'expo-blur';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../hooks/useAuth';
 import { supabase } from '../services/supabase';
 
 const { width, height } = Dimensions.get('window');
-type EditProfileScreenNavigationProp = StackNavigationProp<AuthStackParamList, 'EditProfile'>;
+type EditProfileScreenNavigationProp = StackNavigationProp<AppStackParamList, 'EditProfile'>;
 
 export function EditProfileScreen() {
   const navigation = useNavigation<EditProfileScreenNavigationProp>();
@@ -32,21 +32,61 @@ export function EditProfileScreen() {
     birthDate: '',
   });
 
-  // ✅ Диагностика
-  useEffect(() => {
-    console.log('🔍 EditProfile: authLoading =', authLoading);
-    console.log('🔍 EditProfile: user =', user);
-  }, [authLoading, user]);
+  const isFirstTime = !user?.name || !user?.birthDate;
+
+  // Форматирование даты рождения
+  const formatDate = (text: string) => {
+    // Удаляем все нецифровые символы
+    const cleaned = text.replace(/[^0-9]/g, '');
+    
+    // Ограничиваем длину
+    let formatted = cleaned.slice(0, 8);
+    
+    // Добавляем точки
+    if (formatted.length > 2) {
+      formatted = formatted.slice(0, 2) + '.' + formatted.slice(2);
+    }
+    if (formatted.length > 5) {
+      formatted = formatted.slice(0, 5) + '.' + formatted.slice(5);
+    }
+    
+    return formatted;
+  };
+
+  const handleBirthDateChange = (text: string) => {
+    const formatted = formatDate(text);
+    setBirthDate(formatted);
+  };
+
+  // Валидация даты рождения
+  const validateBirthDate = (date: string) => {
+    const regex = /^(\d{2})\.(\d{2})\.(\d{4})$/;
+    if (!regex.test(date)) return false;
+    
+    const [_, day, month, year] = date.match(regex)!;
+    const dayNum = parseInt(day, 10);
+    const monthNum = parseInt(month, 10);
+    const yearNum = parseInt(year, 10);
+    
+    if (monthNum < 1 || monthNum > 12) return false;
+    if (dayNum < 1 || dayNum > 31) return false;
+    if (yearNum < 1900 || yearNum > new Date().getFullYear()) return false;
+    
+    return true;
+  };
 
   // Загружаем данные из user
   useEffect(() => {
     if (user) {
-      console.log('✅ Загружаем данные из user:', user);
-      
       const userLogin = user.login || '';
       const userName = user.name || '';
       const userEmail = user.email || '';
-      const userBirthDate = user.birthDate || '';
+      let userBirthDate = user.birthDate || '';
+
+      if (userBirthDate && userBirthDate.includes('-')) {
+        const [year, month, day] = userBirthDate.split('-');
+        userBirthDate = `${day}.${month}.${year}`;
+      }
       
       setName(userName);
       setLogin(userLogin);
@@ -94,30 +134,35 @@ export function EditProfileScreen() {
     const isLoginEmpty = !login || !login.trim();
     const isBirthDateEmpty = !birthDate || !birthDate.trim();
     
-    if (isNameEmpty || isLoginEmpty || isBirthDateEmpty) {
+    if (isFirstTime && (isNameEmpty || isLoginEmpty || isBirthDateEmpty)) {
       Alert.alert(
         'Незаполненные поля',
         'Пожалуйста, заполните все обязательные поля (Имя, Логин, Дата рождения)',
-        [{ text: 'Продолжить заполнение', style: 'cancel' }]
+        [{ text: 'Продолжить', style: 'cancel' }]
       );
       return;
     }
     
-    if (hasChanges) {
+    if (isFirstTime && hasChanges) {
+      Alert.alert(
+        'Сохраните изменения',
+        'Пожалуйста, сохраните профиль перед выходом',
+        [{ text: 'Сохранить', onPress: handleSave }]
+      );
+      return;
+    }
+
+    if (!isFirstTime && hasChanges) {
       Alert.alert(
         'Несохранённые изменения',
-        'У вас есть несохранённые изменения. Вы уверены, что хотите выйти?',
+        'У вас есть несохранённые изменения. Сохранить?',
         [
-          { text: 'Отмена', style: 'cancel' },
-          { 
-            text: 'Выйти', 
-            style: 'destructive',
-            onPress: () => navigation.replace('Login')
-          }
+          { text: 'Нет', style: 'destructive', onPress: () => navigation.replace('Home') },
+          { text: 'Да', onPress: handleSave }
         ]
       );
-    } else {
-      navigation.replace('Login');
+    } else if (!isFirstTime && !hasChanges) {
+      navigation.replace('Home');
     }
   };
 
@@ -137,6 +182,11 @@ export function EditProfileScreen() {
       return;
     }
     
+    if (!validateBirthDate(birthDate)) {
+      Alert.alert('Ошибка', 'Введите корректную дату рождения в формате ДД.ММ.ГГГГ');
+      return;
+    }
+    
     const loginRegex = /^[a-zA-Z0-9_]{3,20}$/;
     if (!loginRegex.test(login)) {
       Alert.alert('Ошибка', 'Логин должен содержать 3-20 символов (буквы, цифры, _)');
@@ -149,11 +199,16 @@ export function EditProfileScreen() {
     }
     
     setLoading(true);
-    
+
+    const convertToISO = (dateStr: string) => {
+    const [day, month, year] = dateStr.split('.');
+    return `${year}-${month}-${day}`;
+  };
+  
     const result = await updateUserProfile({
       name: name.trim(),
       login: login.trim().toLowerCase(),
-      birthDate: birthDate,
+      birthDate: convertToISO(birthDate), // ← преобразуем формат
     });
     
     setLoading(false);
@@ -161,11 +216,13 @@ export function EditProfileScreen() {
     if (result) {
       setHasChanges(false);
       setInitialData({ name, login, birthDate });
-      Alert.alert(
-        'Успех!', 
-        'Профиль успешно заполнен',
-        [{ text: 'Войти', onPress: () => navigation.replace('Login') }]
-      );
+      if (isFirstTime) {
+        Alert.alert('Успех!', 'Профиль успешно заполнен', [
+          { text: 'В приложение', onPress: () => navigation.replace('Home') }
+        ]);
+      } else {
+        Alert.alert('Успех!', 'Профиль обновлен');
+      }
     } else {
       Alert.alert('Ошибка', 'Не удалось сохранить профиль');
     }
@@ -190,7 +247,7 @@ export function EditProfileScreen() {
     );
   };
 
-  // ✅ Показываем загрузку только если authLoading И нет user
+  // Показываем загрузку
   if (authLoading && !user) {
     return (
       <View style={styles.loadingContainer}>
@@ -200,13 +257,12 @@ export function EditProfileScreen() {
     );
   }
 
-  // ✅ Если user нет и загрузка закончилась - что-то пошло не так
   if (!user && !authLoading) {
     return (
       <View style={styles.loadingContainer}>
         <Text style={styles.errorText}>Не удалось загрузить профиль</Text>
-        <TouchableOpacity onPress={() => navigation.replace('Login')}>
-          <Text style={styles.backLink}>Вернуться на вход</Text>
+        <TouchableOpacity onPress={() => navigation.goBack()}>
+          <Text style={styles.backLink}>Вернуться назад</Text>
         </TouchableOpacity>
       </View>
     );
@@ -250,7 +306,7 @@ export function EditProfileScreen() {
               </TouchableOpacity>
             </View>
 
-            <Text style={styles.title}>Заполните профиль</Text>
+            <Text style={styles.title}>{isFirstTime ? 'Заполните профиль' : 'Редактирование профиля'}</Text>
             <View style={styles.divider} />
 
             <View style={styles.inputGroup}>
@@ -301,13 +357,16 @@ export function EditProfileScreen() {
               />
             </View>
 
+            {/* Поле даты рождения с маской */}
             <View style={styles.inputGroup}>
               <Text style={styles.label}>Дата рождения *</Text>
               <TextInput 
                 style={styles.input} 
                 placeholder="ДД.ММ.ГГГГ"
                 value={birthDate}
-                onChangeText={setBirthDate}
+                onChangeText={handleBirthDateChange}
+                keyboardType="numeric"
+                maxLength={10}
               />
             </View>
 

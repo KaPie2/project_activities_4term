@@ -21,8 +21,8 @@ export default function App() {
     <SafeAreaProvider>
       <StatusBar barStyle="dark-content" backgroundColor="#fff" />
       <NavigationContainer>
-        {/* Временно всегда показываем AuthNavigator */}
-        <AuthNavigator />
+        {/* Временно всегда показываем AuthNavigator. ТЕПЕРЬ ВСЕГДА СПРАШИВАЕТ */}
+        {user ? <AppNavigator /> : <AuthNavigator />}
       </NavigationContainer>
     </SafeAreaProvider>
   );
