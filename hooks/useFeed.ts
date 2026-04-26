@@ -8,6 +8,7 @@ export interface FeedItem extends Item {
     ownerLogin: string;
     ownerAvatar: string;
     ownerName: string;
+    wishlistTitle?: string;
 }
 
 
@@ -22,26 +23,28 @@ export function useFeed(){
 
     const mapToFeedItem = (data: any): FeedItem => {
         const item = new Item(data.id, {
-            wishlistId: data.wishlist_id,
+            wishlist_id: data.wishlist_id,
             title: data.title,
             description: data.description,
             image_url: data.image_url,
             price: data.price,
             product_url: data.product_url,
             status: data.status,
-            reservedBy: data.reserved_by,
-            reservedAt: data.reserved_at,
-            createdAt: data.created_at,
-            updatedAt: data.updated_at
-        });
+            reserved_by: data.reserved_by,
+            reserved_at: data.reserved_at,
+            created_at: data.created_at,
+            updated_at: data.updated_at,
+    });
 
-        return {
-            ...item,
-            ownerId: data.owner_id,
-            ownerLogin: data.owner_login,
-            ownerAvatar: data.owner_avatar,
-            ownerName: data.owner_name
-        };
+    const owner = data.wishlists?.users;
+    return {
+        ...item,
+        ownerId: data.wishlists?.user_id,
+        ownerLogin: owner?.login,
+        ownerName: owner?.name,
+        ownerAvatar: owner?.avatar_url,
+        wishlistTitle: data.wishlists?.title, // добавляем
+    };
     };
 
 
@@ -57,15 +60,17 @@ export function useFeed(){
       const { data, error: fetchError } = await supabase
         .from('items')
         .select(`
-          *,
-          wishlists: wishlist_id (
+            *,
+            wishlists: wishlist_id (
+            id,
+            title,
             user_id,
             users: user_id (
-              login,
-              name,
-              avatar_url
+                login,
+                name,
+                avatar_url
             )
-          )
+            )
         `)
         .eq('status', 'available')
         .order('created_at', { ascending: false })
