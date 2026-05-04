@@ -1,29 +1,83 @@
-import React from 'react';
-import { 
-  View, Text, StyleSheet, TouchableOpacity, Image, 
-  Dimensions, StatusBar 
+import React, { useEffect } from 'react';
+import {
+  View,
+  Text,
+  StyleSheet,
+  TouchableOpacity,
+  Image,
+  FlatList,
+  ActivityIndicator,
+  RefreshControl,
+  SafeAreaView,
+  StatusBar,
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { AppStackParamList } from '../navigation/AppNavigator';
 import { useAuth } from '../hooks/useAuth';
+import { useFeed } from '../hooks/useFeed';
+import { FeedItemComponent } from '../components/FeedItem';
 import { Ionicons } from '@expo/vector-icons';
 
-const { width, height } = Dimensions.get('window');
-type MainScreenNavigationProp = StackNavigationProp<AppStackParamList, 'Home'>;
+type MainScreenNavigationProp = StackNavigationProp<AppStackParamList, 'Home'>
 
-export function MainScreen() {
+
+export function MainScreen(){
   const navigation = useNavigation<MainScreenNavigationProp>();
-  const { user, signOut } = useAuth();
+  const { user } = useAuth();
+  const { item, loading, error, hasMore, refreshFeed, loadMore } = useFeed();
+
+  useEffect(() => {
+    refreshFeed();
+  }, []);
+
+  const handleOpenWishlist = (wishlistId: string) => {
+    // todo, go to wishlist screen
+    console.log('open wishlist', wishlistId);
+  }
+
+  const handleOpenOwnerWishlist = (ownerId: string) => {
+    // TODO: переход на вишлисты пользователя
+    console.log('Open owner wishlists', ownerId);
+  };
+
+  const renderItem = ({ item }: {item: any}) => (
+    <FeedItemComponent
+      item={item}
+      onPressWishlist={handleOpenWishlist}
+    />
+  );
+
+  const renderFooter = () => {
+    if (!hasMore) return null;
+    return (
+      <View style={styles.footer}>
+        <ActivityIndicator size="small" color="#B5D300" />
+      </View>
+    );
+  };
+
+  const renderEmpty = () => {
+    if (loading) return null;
+    return (
+      <View style={styles.emptyContainer}>
+        <Ionicons name="gift-outline" size={80} color="#DDD" />
+        <Text style={styles.emptyText}>Пока нет подарков в ленте</Text>
+        <TouchableOpacity style={styles.refreshButton} onPress={refreshFeed}>
+          <Text style={styles.refreshButtonText}>Обновить</Text>
+        </TouchableOpacity>
+      </View>
+    );
+  };
 
   return (
-    <View style={styles.container}>
+    <SafeAreaView style={styles.container}>
       <StatusBar barStyle="dark-content" backgroundColor="#fff" />
       
       {/* Шапка с иконкой пользователя */}
       <View style={styles.header}>
         <Text style={styles.headerTitle}>PickMe</Text>
-        <TouchableOpacity 
+        <TouchableOpacity
           style={styles.profileButton}
           onPress={() => navigation.navigate('EditProfile')}
         >
@@ -37,21 +91,36 @@ export function MainScreen() {
         </TouchableOpacity>
       </View>
 
-      {/* Основной контент */}
-      <View style={styles.content}>
-        <Text style={styles.welcomeText}>Добро пожаловать, {user?.name || user?.login || 'User'}!</Text>
-        <Text style={styles.subtitle}>Здесь будут ваши вишлисты</Text>
-        
-        {/* Временная заглушка */}
-        <View style={styles.placeholderContainer}>
-          <Ionicons name="gift-outline" size={80} color="#DDD" />
-          <Text style={styles.placeholderText}>У вас пока нет вишлистов</Text>
-          <TouchableOpacity style={styles.createButton}>
-            <Text style={styles.createButtonText}>Создать первый вишлист</Text>
+      {/* Лента подарков */}
+      {error && !loading && (
+        <View style={styles.errorContainer}>
+          <Text style={styles.errorText}>{error}</Text>
+          <TouchableOpacity style={styles.retryButton} onPress={refreshFeed}>
+            <Text style={styles.retryButtonText}>Повторить</Text>
           </TouchableOpacity>
         </View>
-      </View>
-    </View>
+      )}
+
+      <FlatList
+        data={item}
+        renderItem={renderItem}
+        keyExtractor={item => item.id}
+        refreshControl={
+          <RefreshControl
+            refreshing={loading && item.length > 0}
+            onRefresh={refreshFeed}
+            colors={['#B5D300']}
+            tintColor="#B5D300"
+          />
+        }
+        onEndReached={loadMore}
+        onEndReachedThreshold={0.5}
+        ListFooterComponent={renderFooter}
+        ListEmptyComponent={renderEmpty}
+        contentContainerStyle={item.length === 0 ? styles.emptyListContent : undefined}
+        showsVerticalScrollIndicator={false}
+      />
+    </SafeAreaView>
   );
 }
 
@@ -94,42 +163,57 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: '#B5D300',
   },
-  content: {
-    flex: 1,
+  errorContainer: {
     padding: 20,
+    alignItems: 'center',
+    backgroundColor: '#FFF0F0',
+    marginHorizontal: 16,
+    marginTop: 16,
+    borderRadius: 12,
   },
-  welcomeText: {
-    fontSize: 20,
-    fontWeight: '600',
-    color: '#333',
-    marginBottom: 8,
-  },
-  subtitle: {
+  errorText: {
     fontSize: 14,
-    color: '#999',
-    marginBottom: 40,
+    color: '#FF3B30',
+    textAlign: 'center',
+    marginBottom: 12,
   },
-  placeholderContainer: {
+  retryButton: {
+    paddingHorizontal: 20,
+    paddingVertical: 10,
+    backgroundColor: '#B5D300',
+    borderRadius: 8,
+  },
+  retryButtonText: {
+    color: '#fff',
+    fontWeight: '600',
+  },
+  emptyContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    paddingBottom: 100,
+    paddingVertical: 60,
   },
-  placeholderText: {
+  emptyText: {
     fontSize: 16,
-    color: '#CCC',
-    marginTop: 20,
-    marginBottom: 30,
+    color: '#888',
+    marginTop: 16,
+    marginBottom: 24,
   },
-  createButton: {
-    backgroundColor: '#B5D300',
-    paddingHorizontal: 25,
+  refreshButton: {
+    paddingHorizontal: 24,
     paddingVertical: 12,
-    borderRadius: 30,
+    backgroundColor: '#B5D300',
+    borderRadius: 8,
   },
-  createButtonText: {
-    color: '#1A1A1A',
-    fontSize: 16,
+  refreshButtonText: {
+    color: '#fff',
     fontWeight: '600',
+  },
+  emptyListContent: {
+    flexGrow: 1,
+  },
+  footer: {
+    paddingVertical: 20,
+    alignItems: 'center',
   },
 });

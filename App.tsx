@@ -1,12 +1,12 @@
 import 'react-native-gesture-handler';
 import { NavigationContainer } from '@react-navigation/native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
-import { useAuth } from 'hooks/useAuth';
-import { AppNavigator } from 'navigation/AppNavigator';
-import { AuthNavigator } from 'navigation/AuthNavigator';
+import { AuthProvider, useAuth } from './contexts/AuthContext';
+import { AppNavigator } from './navigation/AppNavigator';
+import { AuthNavigator } from './navigation/AuthNavigator';
 import { ActivityIndicator, View, StatusBar } from 'react-native';
 
-export default function App() {
+function AppContent() {
   const { user, loading } = useAuth();
 
   if (loading) {
@@ -21,9 +21,16 @@ export default function App() {
     <SafeAreaProvider>
       <StatusBar barStyle="dark-content" backgroundColor="#fff" />
       <NavigationContainer>
-        {/* Временно всегда показываем AuthNavigator. ТЕПЕРЬ ВСЕГДА СПРАШИВАЕТ */}
         {user ? <AppNavigator /> : <AuthNavigator />}
       </NavigationContainer>
     </SafeAreaProvider>
+  );
+}
+
+export default function App() {
+  return (
+    <AuthProvider>
+      <AppContent />
+    </AuthProvider>
   );
 }

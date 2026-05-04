@@ -130,103 +130,154 @@ export function EditProfileScreen() {
   };
 
   const handleBack = () => {
-    const isNameEmpty = !name || !name.trim();
-    const isLoginEmpty = !login || !login.trim();
-    const isBirthDateEmpty = !birthDate || !birthDate.trim();
-    
-    if (isFirstTime && (isNameEmpty || isLoginEmpty || isBirthDateEmpty)) {
-      Alert.alert(
-        'Незаполненные поля',
-        'Пожалуйста, заполните все обязательные поля (Имя, Логин, Дата рождения)',
-        [{ text: 'Продолжить', style: 'cancel' }]
-      );
-      return;
-    }
-    
-    if (isFirstTime && hasChanges) {
-      Alert.alert(
-        'Сохраните изменения',
-        'Пожалуйста, сохраните профиль перед выходом',
-        [{ text: 'Сохранить', onPress: handleSave }]
-      );
-      return;
-    }
-
-    if (!isFirstTime && hasChanges) {
-      Alert.alert(
-        'Несохранённые изменения',
-        'У вас есть несохранённые изменения. Сохранить?',
-        [
-          { text: 'Нет', style: 'destructive', onPress: () => navigation.replace('Home') },
-          { text: 'Да', onPress: handleSave }
-        ]
-      );
-    } else if (!isFirstTime && !hasChanges) {
-      navigation.replace('Home');
-    }
-  };
-
-  const handleSave = async () => {
-    if (!name || !name.trim()) {
-      Alert.alert('Ошибка', 'Введите имя');
-      return;
-    }
-    
-    if (!login || !login.trim()) {
-      Alert.alert('Ошибка', 'Введите логин');
-      return;
-    }
-    
-    if (!birthDate || !birthDate.trim()) {
-      Alert.alert('Ошибка', 'Введите дату рождения');
-      return;
-    }
-    
-    if (!validateBirthDate(birthDate)) {
-      Alert.alert('Ошибка', 'Введите корректную дату рождения в формате ДД.ММ.ГГГГ');
-      return;
-    }
-    
-    const loginRegex = /^[a-zA-Z0-9_]{3,20}$/;
-    if (!loginRegex.test(login)) {
-      Alert.alert('Ошибка', 'Логин должен содержать 3-20 символов (буквы, цифры, _)');
-      return;
-    }
-    
-    if (!isLoginUnique) {
-      Alert.alert('Ошибка', 'Этот логин уже занят');
-      return;
-    }
-    
-    setLoading(true);
-
-    const convertToISO = (dateStr: string) => {
-    const [day, month, year] = dateStr.split('.');
-    return `${year}-${month}-${day}`;
-  };
+  const isNameEmpty = !name || !name.trim();
+  const isLoginEmpty = !login || !login.trim();
+  const isBirthDateEmpty = !birthDate || !birthDate.trim();
   
+  if (isFirstTime && (isNameEmpty || isLoginEmpty || isBirthDateEmpty)) {
+    Alert.alert(
+      'Незаполненные поля',
+      'Пожалуйста, заполните все обязательные поля (Имя, Логин, Дата рождения)',
+      [{ text: 'Продолжить', style: 'cancel' }]
+    );
+    return;
+  }
+  
+  if (isFirstTime && hasChanges) {
+    Alert.alert(
+      'Сохраните изменения',
+      'Пожалуйста, сохраните профиль перед выходом',
+      [{ text: 'Сохранить', onPress: handleSave }]
+    );
+    return;
+  }
+
+  if (!isFirstTime && hasChanges) {
+    Alert.alert(
+      'Несохранённые изменения',
+      'У вас есть несохранённые изменения. Сохранить?',
+      [
+        { 
+          text: 'Нет', 
+          style: 'destructive', 
+          onPress: () => {
+            // Проверяем, можем ли мы вернуться назад
+            if (navigation.canGoBack()) {
+              navigation.goBack();
+            }
+          }
+        },
+        { text: 'Да', onPress: handleSave }
+      ]
+    );
+  } else if (!isFirstTime && !hasChanges) {
+    // Просто возвращаемся если можем
+    if (navigation.canGoBack()) {
+      navigation.goBack();
+    }
+  }
+};
+
+const handleSave = async () => {
+  // Валидация имени
+  if (!name || !name.trim()) {
+    Alert.alert('Ошибка', 'Введите имя');
+    return;
+  }
+  
+  // Валидация логина
+  if (!login || !login.trim()) {
+    Alert.alert('Ошибка', 'Введите логин');
+    return;
+  }
+  
+  // Валидация даты рождения
+  if (!birthDate || !birthDate.trim()) {
+    Alert.alert('Ошибка', 'Введите дату рождения');
+    return;
+  }
+  
+  // Валидация формата даты рождения
+  if (!validateBirthDate(birthDate)) {
+    Alert.alert('Ошибка', 'Введите корректную дату рождения в формате ДД.ММ.ГГГГ');
+    return;
+  }
+  
+  // Валидация формата логина
+  const loginRegex = /^[a-zA-Z0-9_]{3,20}$/;
+  if (!loginRegex.test(login)) {
+    Alert.alert('Ошибка', 'Логин должен содержать 3-20 символов (буквы, цифры, _)');
+    return;
+  }
+  
+  // Проверка уникальности логина
+  if (!isLoginUnique) {
+    Alert.alert('Ошибка', 'Этот логин уже занят');
+    return;
+  }
+  
+  // Начинаем сохранение
+  console.log('💾 Начинаем сохранение профиля...');
+  setLoading(true);
+  
+  try {
+    // Функция преобразования даты в ISO формат
+    const convertToISO = (dateStr: string) => {
+      const [day, month, year] = dateStr.split('.');
+      return `${year}-${month}-${day}`;
+    };
+    
+    // Преобразуем дату рождения
+    const birthDateISO = convertToISO(birthDate);
+    console.log('📅 Дата преобразована:', birthDate, '→', birthDateISO);
+    
+    // Сохраняем профиль
     const result = await updateUserProfile({
       name: name.trim(),
       login: login.trim().toLowerCase(),
-      birthDate: convertToISO(birthDate), // ← преобразуем формат
+      birthDate: birthDateISO,
     });
     
-    setLoading(false);
+    console.log('📊 Результат сохранения:', result ? 'УСПЕХ' : 'ОШИБКА');
     
     if (result) {
+      // Успешное сохранение
+      console.log('✅ Профиль успешно сохранен, user обновлен в useAuth');
+      
       setHasChanges(false);
-      setInitialData({ name, login, birthDate });
-      if (isFirstTime) {
-        Alert.alert('Успех!', 'Профиль успешно заполнен', [
-          { text: 'В приложение', onPress: () => navigation.replace('Home') }
-        ]);
-      } else {
-        Alert.alert('Успех!', 'Профиль обновлен');
-      }
-    } else {
-      Alert.alert('Ошибка', 'Не удалось сохранить профиль');
+      setInitialData({ name: name.trim(), login: login.trim().toLowerCase(), birthDate });
+      
+      // Показываем сообщение об успехе без навигации
+      // Для первого раза - навигатор сам переключится
+      // Для обновления - алерт без goBack, пользователь сам нажмет назад
+      Alert.alert(
+        'Успех!', 
+        isFirstTime ? 'Профиль успешно заполнен' : 'Профиль обновлен'
+      );
     }
-  };
+  } catch (err: any) {
+    // Обработка исключений
+    console.error('❌ Ошибка при сохранении профиля:', err);
+    
+    let errorMessage = 'Произошла ошибка при сохранении профиля';
+    
+    if (err.message?.includes('ERR_CONNECTION_RESET') || 
+        err.message?.includes('Network request failed')) {
+      errorMessage = 'Проблема с сетью. Проверьте подключение к интернету и попробуйте снова.';
+    } else if (err.message) {
+      errorMessage = err.message;
+    }
+    
+    Alert.alert('Ошибка', errorMessage, [
+      { text: 'OK' },
+      { text: 'Повторить', onPress: () => handleSave() }
+    ]);
+  } finally {
+    // Всегда сбрасываем состояние загрузки
+    console.log('🏁 Завершение сохранения, сбрасываем loading');
+    setLoading(false);
+  }
+};
 
   const handleChangePassword = () => {
     Alert.alert('Изменение пароля', 'Эта функция будет доступна в следующей версии');

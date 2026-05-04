@@ -3,6 +3,7 @@ import { View, Text, StyleSheet, TouchableOpacity, Alert } from 'react-native';
 import { useAuth } from '../hooks/useAuth';
 import { Ionicons } from '@expo/vector-icons';
 import { EditProfileScreen } from '../screens/EditProfile';
+import { MainScreen } from '@/screens/Home';
 
 export type AppStackParamList = {
   Home: undefined;
@@ -12,44 +13,6 @@ export type AppStackParamList = {
 };
 
 const Stack = createStackNavigator<AppStackParamList>();
-
-function HomeScreen({ navigation }: any) {
-  const { user, signOut } = useAuth();
-  
-  const handleSignOut = async () => {
-    Alert.alert('Выход', 'Вы уверены, что хотите выйти?', [
-      { text: 'Отмена', style: 'cancel' },
-      { text: 'Выйти', style: 'destructive', onPress: async () => { await signOut(); } }
-    ]);
-  };
-  
-  return (
-    <View style={styles.container}>
-      <Text style={styles.title}>Добро пожаловать в PickMe!</Text>
-      <Text style={styles.subtitle}>Приложение для вишлистов</Text>
-      
-      {user && (
-        <View style={styles.userInfo}>
-          <Text style={styles.userName}>Привет, {user.name || user.login || 'User'}!</Text>
-          <Text style={styles.userEmail}>{user.email}</Text>
-          {user.login && <Text style={styles.userLogin}>@{user.login}</Text>}
-        </View>
-      )}
-      
-      <View style={styles.buttonContainer}>
-        <TouchableOpacity style={[styles.button, styles.buttonPrimary]} onPress={() => navigation.navigate('Wishlists')}>
-          <Text style={styles.buttonText}>Мои вишлисты</Text>
-        </TouchableOpacity>
-        <TouchableOpacity style={[styles.button, styles.buttonSecondary]} onPress={() => navigation.navigate('Profile')}>
-          <Text style={styles.buttonText}>Профиль</Text>
-        </TouchableOpacity>
-        <TouchableOpacity style={[styles.button, styles.buttonDanger]} onPress={handleSignOut}>
-          <Text style={styles.buttonText}>Выйти</Text>
-        </TouchableOpacity>
-      </View>
-    </View>
-  );
-}
 
 function ProfileScreen({ navigation }: any) {
   const { user } = useAuth();
@@ -102,9 +65,18 @@ export function AppNavigator() {
   const { user } = useAuth();
   const needsProfile = !user?.name || !user?.birthDate;
 
+  // ДОБАВЬ ЭТОТ ЛОГ
+  console.log('🔍 AppNavigator render:', {
+    hasUser: !!user,
+    name: user?.name,
+    birthDate: user?.birthDate,
+    needsProfile: needsProfile,
+    key: needsProfile ? 'profile' : 'app'
+  });
+
   return (
     <Stack.Navigator
-      key={needsProfile ? 'profile' : 'app'}  // ✅ КЛЮЧ - ЗАСТАВЛЯЕТ НАВИГАТОР ПЕРЕСОЗДАТЬСЯ
+      key={needsProfile ? 'profile' : 'app'}
       screenOptions={{
         headerShown: true,
         headerStyle: {
@@ -122,13 +94,16 @@ export function AppNavigator() {
         <Stack.Screen
           name="EditProfile"
           component={EditProfileScreen}
-          options={{ title: 'Заполните профиль' }}
+          options={{ 
+            title: 'Заполните профиль',
+            headerLeft: () => null  // Блокируем кнопку назад
+          }}
         />
       ) : (
         <>
           <Stack.Screen
             name="Home"
-            component={HomeScreen}
+            component={MainScreen}
             options={({ navigation }) => ({
               title: 'Главная',
               headerRight: () => (
@@ -249,6 +224,17 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: '#999',
   },
-  editButton: { backgroundColor: '#B5D300', paddingVertical: 10, paddingHorizontal: 20, borderRadius: 25, alignSelf: 'center', marginBottom: 20 },
-  editButtonText: { color: '#1A1A1A', fontSize: 14, fontWeight: '600' },
+  editButton: { 
+    backgroundColor: '#B5D300', 
+    paddingVertical: 10, 
+    paddingHorizontal: 20, 
+    borderRadius: 25, 
+    alignSelf: 'center', 
+    marginBottom: 20 
+  },
+  editButtonText: { 
+    color: '#1A1A1A', 
+    fontSize: 14, 
+    fontWeight: '600' 
+  },
 });
