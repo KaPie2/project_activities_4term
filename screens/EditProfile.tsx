@@ -182,14 +182,50 @@ export function EditProfileScreen() {
   };
 
   const handleDeleteAccount = () => {
-    Alert.alert(
-      'Удаление аккаунта',
-      'Вы уверены? Это действие необратимо.',
-      [
-        { text: 'Отмена', style: 'cancel' },
-        { text: 'Удалить', style: 'destructive', onPress: () => Alert.alert('Функция временно недоступна') }
-      ]
-    );
+  Alert.alert(
+    'Удаление аккаунта',
+    'Вы уверены? Это действие необратимо. Все ваши данные, включая вишлисты и подарки, будут удалены навсегда.',
+    [
+      { text: 'Отмена', style: 'cancel' },
+      { 
+        text: 'Удалить', 
+        style: 'destructive',
+        onPress: confirmDeleteAccount
+      }
+    ]
+  );
+};
+
+  const confirmDeleteAccount = async () => {
+    setLoading(true);
+    
+    try {
+      const { error } = await supabase.rpc('delete_user_account');
+      
+      if (error) {
+        throw new Error(error.message);
+      }
+      
+      // Выходим из аккаунта
+      await supabase.auth.signOut();
+      
+      Alert.alert('Аккаунт удалён', 'Ваш аккаунт был успешно удалён');
+      
+    } catch (err: any) {
+      console.error('Delete account error:', err);
+      
+      let errorMessage = 'Произошла ошибка при удалении аккаунта';
+      
+      if (err.message?.includes('Failed to fetch') || err.message?.includes('Network')) {
+        errorMessage = 'Проблема с сетью. Проверьте подключение к интернету.';
+      } else if (err.message) {
+        errorMessage = err.message;
+      }
+      
+      Alert.alert('Ошибка', errorMessage);
+    } finally {
+      setLoading(false);
+    }
   };
 
   if (authLoading && !user) {

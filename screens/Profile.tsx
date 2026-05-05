@@ -12,6 +12,8 @@ import {
 import { useAuth } from '../hooks/useAuth';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { supabase } from '../services/supabase'; // если ещё не импортирован
 
 const { width, height } = Dimensions.get('window');
 
@@ -98,6 +100,17 @@ export function ProfileScreen() {
             <Ionicons name="heart-outline" size={32} color="#FF69B4" />
           </TouchableOpacity>
         </View>
+
+        <TouchableOpacity 
+          style={styles.debugButton}
+          onPress={async () => {
+            await supabase.auth.signOut();
+            await AsyncStorage.clear();
+            Alert.alert('Сессия очищена', 'Перезапустите приложение');
+          }}
+        >
+          <Text style={styles.debugButtonText}>Очистить сессию (DEBUG)</Text>
+        </TouchableOpacity>
 
         {/* Раздел "Мои вишлисты и подарки" */}
         <View style={styles.wishlistsSection}>
@@ -264,6 +277,20 @@ const styles = StyleSheet.create({
   },
   createWishlistText: {
     color: '#1A1A1A',
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  debugButton: {
+    backgroundColor: '#FF4444',
+    paddingVertical: 12,
+    paddingHorizontal: 20,
+    borderRadius: 25,
+    marginTop: 20,
+    marginHorizontal: 20,
+    alignItems: 'center',
+  },
+  debugButtonText: {
+    color: '#FFF',
     fontSize: 14,
     fontWeight: '600',
   },
