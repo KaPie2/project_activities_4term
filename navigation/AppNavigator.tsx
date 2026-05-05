@@ -1,180 +1,181 @@
-import { createStackNavigator } from '@react-navigation/stack';
-import { View, Text, StyleSheet, TouchableOpacity, Alert } from 'react-native';
+import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
+import { createStackNavigator, TransitionPresets } from '@react-navigation/stack';
+import { View, Text, StyleSheet, TouchableOpacity, Platform } from 'react-native';
 import { useAuth } from '../hooks/useAuth';
 import { Ionicons } from '@expo/vector-icons';
 import { EditProfileScreen } from '../screens/EditProfile';
-import { MainScreen } from '@/screens/Home';
+import { MainScreen } from '../screens/Home';
+import { ProfileScreen } from '../screens/Profile';
 
-export type AppStackParamList = {
+// Типы для Tab навигатора
+export type MainTabParamList = {
+  Notifications: undefined;
   Home: undefined;
+  Create: undefined;
+  Search: undefined;
   Profile: undefined;
-  Wishlists: undefined;
+};
+
+// Типы для корневого Stack (оба экрана объявлены всегда)
+export type RootStackParamList = {
+  MainTabs: undefined;
   EditProfile: undefined;
 };
 
-const Stack = createStackNavigator<AppStackParamList>();
+const Tab = createBottomTabNavigator<MainTabParamList>();
+const RootStack = createStackNavigator<RootStackParamList>();
 
-function ProfileScreen({ navigation }: any) {
-  const { user } = useAuth();
-  
+// ------------------- Экран-заглушки -------------------
+function NotificationsScreen() {
   return (
-    <View style={styles.container}>
-      <Text style={styles.title}>Профиль</Text>
-      
-      <TouchableOpacity style={styles.editButton} onPress={() => navigation.navigate('EditProfile')}>
-        <Text style={styles.editButtonText}>Редактировать профиль</Text>
+    <View style={styles.screenContainer}>
+      <Ionicons name="notifications-outline" size={60} color="#ccc" />
+      <Text style={styles.emptyText}>Уведомлений пока нет</Text>
+    </View>
+  );
+}
+
+function SearchScreen() {
+  return (
+    <View style={styles.screenContainer}>
+      <Ionicons name="search-outline" size={60} color="#ccc" />
+      <Text style={styles.emptyText}>Поиск вишлистов и подарков</Text>
+    </View>
+  );
+}
+
+function CreateScreen() {
+  return (
+    <View style={styles.screenContainer}>
+      <Ionicons name="add-circle-outline" size={60} color="#ccc" />
+      <Text style={styles.emptyText}>Создать вишлист или подарок</Text>
+      <TouchableOpacity style={styles.createButton}>
+        <Text style={styles.createButtonText}>Создать вишлист</Text>
       </TouchableOpacity>
-      
-      {user && (
-        <View style={styles.userInfo}>
-          <View style={styles.avatarPlaceholder}>
-            <Ionicons name="person" size={60} color="#B5D300" />
-          </View>
-          <Text style={styles.infoLabel}>Имя:</Text>
-          <Text style={styles.infoValue}>{user.name || 'Не указано'}</Text>
-          <Text style={styles.infoLabel}>Логин:</Text>
-          <Text style={styles.infoValue}>@{user.login || 'Не указан'}</Text>
-          <Text style={styles.infoLabel}>Email:</Text>
-          <Text style={styles.infoValue}>{user.email}</Text>
-          <Text style={styles.infoLabel}>Дата рождения:</Text>
-          <Text style={styles.infoValue}>{user.birthDate || 'Не указана'}</Text>
-          <Text style={styles.infoLabel}>Дата регистрации:</Text>
-          <Text style={styles.infoValue}>{new Date(user.created_at).toLocaleDateString('ru-RU')}</Text>
-        </View>
-      )}
+      <TouchableOpacity style={[styles.createButton, styles.createGiftButton]}>
+        <Text style={styles.createButtonText}>Добавить подарок</Text>
+      </TouchableOpacity>
     </View>
   );
 }
 
-function WishlistsScreen() {
+// ------------------- TabNavigator (для MainTabs) -------------------
+function MainTabNavigator() {
   return (
-    <View style={styles.container}>
-      <Text style={styles.title}>Мои вишлисты</Text>
-      <View style={styles.emptyState}>
-        <Ionicons name="gift-outline" size={60} color="#ccc" />
-        <Text style={styles.emptyText}>У вас пока нет вишлистов</Text>
-        <TouchableOpacity style={[styles.button, styles.buttonPrimary]}>
-          <Text style={styles.buttonText}>Создать первый вишлист</Text>
-        </TouchableOpacity>
-      </View>
-    </View>
+    <Tab.Navigator
+      screenOptions={({ route }) => ({
+        tabBarIcon: ({ focused, color, size }) => {
+          let iconName: keyof typeof Ionicons.glyphMap = 'home-outline';
+
+          if (route.name === 'Home') {
+            iconName = focused ? 'home' : 'home-outline';
+          } else if (route.name === 'Notifications') {
+            iconName = focused ? 'notifications' : 'notifications-outline';
+          } else if (route.name === 'Create') {
+            iconName = focused ? 'add-circle' : 'add-circle-outline';
+          } else if (route.name === 'Search') {
+            iconName = focused ? 'search' : 'search-outline';
+          } else if (route.name === 'Profile') {
+            iconName = focused ? 'person' : 'person-outline';
+          }
+
+          return <Ionicons name={iconName} size={size} color={color} />;
+        },
+        tabBarActiveTintColor: '#B5D300',
+        tabBarInactiveTintColor: '#999',
+        tabBarStyle: {
+          backgroundColor: '#FFFFFF',
+          borderTopWidth: 1,
+          borderTopColor: '#EEEEEE',
+          height: Platform.OS === 'ios' ? 85 : 65,
+          paddingBottom: Platform.OS === 'ios' ? 25 : 10,
+          paddingTop: 8,
+        },
+        tabBarLabelStyle: {
+          fontSize: 11,
+          fontWeight: '500',
+        },
+        headerShown: false,
+      })}
+    >
+      <Tab.Screen
+        name="Notifications"
+        component={NotificationsScreen}
+        options={{ tabBarLabel: 'Уведомления' }}
+      />
+      <Tab.Screen
+        name="Home"
+        component={MainScreen}
+        options={{ tabBarLabel: 'Главная' }}
+      />
+      <Tab.Screen
+        name="Create"
+        component={CreateScreen}
+        options={{ tabBarLabel: 'Создать' }}
+      />
+      <Tab.Screen
+        name="Search"
+        component={SearchScreen}
+        options={{ tabBarLabel: 'Поиск' }}
+      />
+      <Tab.Screen
+        name="Profile"
+        component={ProfileScreen}
+        options={{ tabBarLabel: 'Профиль' }}
+      />
+    </Tab.Navigator>
   );
 }
 
+// ------------------- Корневой навигатор (без условного рендеринга) -------------------
 export function AppNavigator() {
   const { user } = useAuth();
   const needsProfile = !user?.name || !user?.birthDate;
 
-  // ДОБАВЬ ЭТОТ ЛОГ
   console.log('🔍 AppNavigator render:', {
     hasUser: !!user,
     name: user?.name,
     birthDate: user?.birthDate,
-    needsProfile: needsProfile,
-    key: needsProfile ? 'profile' : 'app'
+    needsProfile,
   });
 
   return (
-    <Stack.Navigator
-      key={needsProfile ? 'profile' : 'app'}
-      screenOptions={{
-        headerShown: true,
-        headerStyle: {
-          backgroundColor: '#fff',
-          shadowColor: 'transparent',
-          elevation: 0,
-        },
-        headerTitleStyle: {
-          fontWeight: '600',
-          fontSize: 18,
-        },
-      }}
+    <RootStack.Navigator
+      screenOptions={{ headerShown: false }}
+      initialRouteName={needsProfile ? 'EditProfile' : 'MainTabs'}
     >
-      {needsProfile ? (
-        <Stack.Screen
-          name="EditProfile"
-          component={EditProfileScreen}
-          options={{ 
-            title: 'Заполните профиль',
-            headerLeft: () => null  // Блокируем кнопку назад
-          }}
-        />
-      ) : (
-        <>
-          <Stack.Screen
-            name="Home"
-            component={MainScreen}
-            options={({ navigation }) => ({
-              title: 'Главная',
-              headerRight: () => (
-                <TouchableOpacity
-                  style={{ marginRight: 15 }}
-                  onPress={() => navigation.navigate('Profile')}
-                >
-                  <Ionicons name="person-circle-outline" size={28} color="#333" />
-                </TouchableOpacity>
-              ),
-            })}
-          />
-          <Stack.Screen
-            name="Profile"
-            component={ProfileScreen}
-            options={{ title: 'Профиль' }}
-          />
-          <Stack.Screen
-            name="Wishlists"
-            component={WishlistsScreen}
-            options={{ title: 'Мои вишлисты' }}
-          />
-          <Stack.Screen
-            name="EditProfile"
-            component={EditProfileScreen}
-            options={{ title: 'Редактирование профиля' }}
-          />
-        </>
-      )}
-    </Stack.Navigator>
+      <RootStack.Screen 
+        name="MainTabs" 
+        component={MainTabNavigator}
+      />
+      <RootStack.Screen 
+        name="EditProfile" 
+        component={EditProfileScreen}
+      />
+    </RootStack.Navigator>
   );
 }
 
+// ------------------- Стили (как у вас были) -------------------
 const styles = StyleSheet.create({
-  container: {
+  screenContainer: {
     flex: 1,
     padding: 20,
     backgroundColor: '#fff',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   title: {
     fontSize: 28,
     fontWeight: 'bold',
-    marginBottom: 10,
-    textAlign: 'center',
-  },
-  subtitle: {
-    fontSize: 16,
-    color: '#666',
-    marginBottom: 30,
+    marginBottom: 20,
     textAlign: 'center',
   },
   userInfo: {
     backgroundColor: '#f8f9fa',
     padding: 20,
     borderRadius: 15,
-    marginBottom: 30,
     width: '100%',
-  },
-  userName: {
-    fontSize: 20,
-    fontWeight: '600',
-    marginBottom: 5,
-  },
-  userEmail: {
-    fontSize: 14,
-    color: '#666',
-  },
-  userLogin: {
-    fontSize: 14,
-    color: '#B5D300',
-    marginTop: 5,
   },
   avatarPlaceholder: {
     alignItems: 'center',
@@ -191,50 +192,39 @@ const styles = StyleSheet.create({
     color: '#333',
     marginBottom: 5,
   },
-  buttonContainer: {
-    width: '100%',
-    gap: 12,
-  },
-  button: {
-    paddingVertical: 14,
-    borderRadius: 30,
-    alignItems: 'center',
-  },
-  buttonPrimary: {
+  editButton: {
     backgroundColor: '#B5D300',
+    paddingVertical: 12,
+    paddingHorizontal: 24,
+    borderRadius: 25,
+    marginBottom: 20,
   },
-  buttonSecondary: {
-    backgroundColor: '#1A1A1A',
-  },
-  buttonDanger: {
-    backgroundColor: '#ff4444',
-  },
-  buttonText: {
-    color: '#fff',
+  editButtonText: {
+    color: '#1A1A1A',
     fontSize: 16,
     fontWeight: '600',
-  },
-  emptyState: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    gap: 20,
   },
   emptyText: {
     fontSize: 16,
     color: '#999',
+    marginTop: 10,
   },
-  editButton: { 
-    backgroundColor: '#B5D300', 
-    paddingVertical: 10, 
-    paddingHorizontal: 20, 
-    borderRadius: 25, 
-    alignSelf: 'center', 
-    marginBottom: 20 
+  createButton: {
+    backgroundColor: '#B5D300',
+    paddingVertical: 12,
+    paddingHorizontal: 24,
+    borderRadius: 25,
+    marginTop: 20,
+    width: '80%',
+    alignItems: 'center',
   },
-  editButtonText: { 
-    color: '#1A1A1A', 
-    fontSize: 14, 
-    fontWeight: '600' 
+  createGiftButton: {
+    backgroundColor: '#1A1A1A',
+    marginTop: 10,
+  },
+  createButtonText: {
+    color: '#FFF',
+    fontSize: 16,
+    fontWeight: '600',
   },
 });
