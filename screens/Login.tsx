@@ -3,7 +3,7 @@ import { View, Text, StyleSheet, TouchableOpacity, TextInput, Alert } from 'reac
 import { useNavigation } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { AuthStackParamList } from '../navigation/AuthNavigator';
-import { useAuth } from '../hooks/useAuth';
+import { useAuth } from '../contexts/AuthContext';
 import { Image, Dimensions, SafeAreaView, KeyboardAvoidingView, Platform, ScrollView } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { BlurView } from 'expo-blur';
@@ -28,8 +28,8 @@ export function LoginScreen() {
       return;
     }
 
-    const result = await signIn(email, password);
-    if (!result.success) {
+  const result = await signIn(email, password);
+  if (!result.success) {
       Alert.alert('Ошибка входа', result.error || 'Неверный email или пароль');
     }
   };

@@ -4,15 +4,12 @@ import {
   Dimensions, KeyboardAvoidingView, Platform, Alert, ActivityIndicator 
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
-import { StackNavigationProp } from '@react-navigation/stack';
-// import { AppStackParamList } from '../navigation/AppNavigator';
 import { BlurView } from 'expo-blur';
 import { Ionicons } from '@expo/vector-icons';
-import { useAuth } from '../hooks/useAuth';
+import { useAuth } from '../contexts/AuthContext';
 import { supabase } from '../services/supabase';
 
 const { width, height } = Dimensions.get('window');
-// type EditProfileScreenNavigationProp = StackNavigationProp<AppStackParamList, 'EditProfile'>;
 
 export function EditProfileScreen() {
   const navigation = useNavigation();
@@ -113,37 +110,73 @@ export function EditProfileScreen() {
     setIsLoginUnique(!data);
   };
 
+  // Функция возврата на профиль
   const goToProfile = () => {
+    // Если это первый вход и профиль не заполнен - не даём уйти
+    if (isFirstTime && (!name || !login || !birthDate)) {
+      Alert.alert(
+        'Заполните профиль',
+        'Пожалуйста, заполните все обязательные поля перед выходом',
+        [{ text: 'OK' }]
+      );
+      return;
+    }
+    
+    // Если есть несохранённые изменения
+    if (hasChanges) {
+      Alert.alert(
+        'Несохранённые изменения',
+        'У вас есть несохранённые изменения. Сохранить?',
+        [
+          { text: 'Нет', style: 'destructive', onPress: () => navigateToProfile() },
+          { text: 'Да', onPress: handleSaveAndGoBack }
+        ]
+      );
+    } else {
+      navigateToProfile();
+    }
+  };
+
+  const navigateToProfile = () => {
     (navigation as any).navigate('MainTabs', {
       screen: 'Profile',
     });
   };
 
-  const handleSave = async () => {
+  const handleSaveAndGoBack = async () => {
+    const saved = await performSave();
+    if (saved) {
+      navigateToProfile();
+    }
+  };
+
+  const performSave = async (): Promise<boolean> => {
+    // Валидация полей
     if (!name || !name.trim()) {
       Alert.alert('Ошибка', 'Введите имя');
-      return;
+      return false;
     }
     if (!login || !login.trim()) {
       Alert.alert('Ошибка', 'Введите логин');
-      return;
+      return false;
     }
     if (!birthDate || !birthDate.trim()) {
       Alert.alert('Ошибка', 'Введите дату рождения');
-      return;
+      return false;
     }
     if (!validateBirthDate(birthDate)) {
       Alert.alert('Ошибка', 'Введите корректную дату рождения в формате ДД.ММ.ГГГГ');
-      return;
+      return false;
     }
+    
     const loginRegex = /^[a-zA-Z0-9_]{3,20}$/;
     if (!loginRegex.test(login)) {
       Alert.alert('Ошибка', 'Логин должен содержать 3-20 символов (буквы, цифры, _)');
-      return;
+      return false;
     }
     if (!isLoginUnique) {
       Alert.alert('Ошибка', 'Этот логин уже занят');
-      return;
+      return false;
     }
     
     setLoading(true);
@@ -161,9 +194,15 @@ export function EditProfileScreen() {
       
       if (result) {
         setHasChanges(false);
-        setInitialData({ name: name.trim(), login: login.trim().toLowerCase(), birthDate });
+        setInitialData({ 
+          name: name.trim(), 
+          login: login.trim().toLowerCase(), 
+          birthDate 
+        });
         Alert.alert('Успех!', isFirstTime ? 'Профиль успешно заполнен' : 'Профиль обновлен');
+        return true;
       }
+      return false;
     } catch (err: any) {
       let errorMessage = 'Произошла ошибка при сохранении профиля';
       if (err.message?.includes('ERR_CONNECTION_RESET') || err.message?.includes('Network request failed')) {
@@ -171,10 +210,15 @@ export function EditProfileScreen() {
       } else if (err.message) {
         errorMessage = err.message;
       }
-      Alert.alert('Ошибка', errorMessage, [{ text: 'OK' }, { text: 'Повторить', onPress: () => handleSave() }]);
+      Alert.alert('Ошибка', errorMessage);
+      return false;
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleSave = async () => {
+    await performSave();
   };
 
   const handleChangePassword = () => {
@@ -182,19 +226,19 @@ export function EditProfileScreen() {
   };
 
   const handleDeleteAccount = () => {
-  Alert.alert(
-    'Удаление аккаунта',
-    'Вы уверены? Это действие необратимо. Все ваши данные, включая вишлисты и подарки, будут удалены навсегда.',
-    [
-      { text: 'Отмена', style: 'cancel' },
-      { 
-        text: 'Удалить', 
-        style: 'destructive',
-        onPress: confirmDeleteAccount
-      }
-    ]
-  );
-};
+    Alert.alert(
+      'Удаление аккаунта',
+      'Вы уверены? Это действие необратимо. Все ваши данные, включая вишлисты и подарки, будут удалены навсегда.',
+      [
+        { text: 'Отмена', style: 'cancel' },
+        { 
+          text: 'Удалить', 
+          style: 'destructive',
+          onPress: confirmDeleteAccount
+        }
+      ]
+    );
+  };
 
   const confirmDeleteAccount = async () => {
     setLoading(true);
@@ -206,9 +250,7 @@ export function EditProfileScreen() {
         throw new Error(error.message);
       }
       
-      // Выходим из аккаунта
       await supabase.auth.signOut();
-      
       Alert.alert('Аккаунт удалён', 'Ваш аккаунт был успешно удалён');
       
     } catch (err: any) {
@@ -258,7 +300,6 @@ export function EditProfileScreen() {
 
       <BlurView intensity={40} tint="light" style={StyleSheet.absoluteFill} />
 
-      {/* Кнопка назад в левом верхнем углу */}
       <TouchableOpacity style={styles.backButton} onPress={goToProfile}>
         <Ionicons name="arrow-back" size={28} color="#333" />
       </TouchableOpacity>
@@ -268,7 +309,6 @@ export function EditProfileScreen() {
         style={styles.keyboardView}
       >
         <View style={styles.card}>
-          {/* Аватар */}
           <View style={styles.avatarContainer}>
             <Image 
               source={require('../assets/default-avatar.png')} 
@@ -279,8 +319,6 @@ export function EditProfileScreen() {
               <Ionicons name="camera" size={18} color="#FFF" />
             </TouchableOpacity>
           </View>
-
-          {/* Больше никакого заголовка! */}
 
           <View style={styles.inputGroup}>
             <Text style={styles.label}>Имя *</Text>

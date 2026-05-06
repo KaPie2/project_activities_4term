@@ -260,7 +260,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setError(null);
     try {
       const { data, error: authError } = await supabase.auth.signInWithPassword({ email, password });
-      if (authError) throw new Error(authError.message);
+      if (authError) {
+        // Возвращаем понятное сообщение об ошибке
+        let errorMessage = authError.message;
+        
+        if (authError.message === 'Invalid login credentials') {
+          errorMessage = 'Неверный email или пароль';
+        } else if (authError.message.includes('Email not confirmed')) {
+          errorMessage = 'Подтвердите email перед входом';
+        }
+        
+        throw new Error(errorMessage);
+      }
       if (!data.user) throw new Error('Вход не удался');
 
       const login = data.user.user_metadata?.login || email.split('@')[0] || 'user';

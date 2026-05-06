@@ -1,7 +1,7 @@
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { createStackNavigator, TransitionPresets } from '@react-navigation/stack';
 import { View, Text, StyleSheet, TouchableOpacity, Platform } from 'react-native';
-import { useAuth } from '../hooks/useAuth';
+import { useAuth } from '../contexts/AuthContext';
 import { Ionicons } from '@expo/vector-icons';
 import { EditProfileScreen } from '../screens/EditProfile';
 import { MainScreen } from '../screens/Home';
