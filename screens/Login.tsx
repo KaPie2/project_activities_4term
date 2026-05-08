@@ -114,7 +114,7 @@ export function LoginScreen() {
                 <TextInput 
                   style={styles.passwordInput} 
                   secureTextEntry={!showPassword}
-                  placeholder="..................."
+                  placeholder="·················"
                   value={password}
                   onChangeText={setPassword}
                 />
@@ -158,7 +158,7 @@ export function LoginScreen() {
 const styles = StyleSheet.create({
   container: { 
     flex: 1, 
-    backgroundColor: '#FFF' 
+    backgroundColor: '#FCFAF7' 
   },
   headerImageContainer: {
     height: height * 0.45,
@@ -220,7 +220,7 @@ const styles = StyleSheet.create({
   },
   input: {
     height: 60,
-    backgroundColor: '#F3F3F3',
+    backgroundColor: '#E7E8E1',
     borderRadius: 30,
     paddingHorizontal: 25,
     fontSize: 16,
@@ -230,7 +230,7 @@ const styles = StyleSheet.create({
   passwordWrapper: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#F3F3F3',
+    backgroundColor: '#E7E8E1',
     borderRadius: 30,
     paddingHorizontal: 20,
     borderWidth: 1,

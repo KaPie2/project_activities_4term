@@ -8,11 +8,13 @@ import { BlurView } from 'expo-blur';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../contexts/AuthContext';
 import { supabase } from '../services/supabase';
+import { StackNavigationProp } from '@react-navigation/stack';
+import { RootStackParamList } from '../navigation/AppNavigator'; // проверьте путь
 
 const { width, height } = Dimensions.get('window');
 
 export function EditProfileScreen() {
-  const navigation = useNavigation();
+  const navigation = useNavigation<StackNavigationProp<RootStackParamList>>();
   const { user, updateUserProfile, loading: authLoading } = useAuth();
   
   const [loading, setLoading] = useState(false);
@@ -199,7 +201,21 @@ export function EditProfileScreen() {
           login: login.trim().toLowerCase(), 
           birthDate 
         });
-        Alert.alert('Успех!', isFirstTime ? 'Профиль успешно заполнен' : 'Профиль обновлен');
+        Alert.alert(
+          'Успех!', 
+          isFirstTime ? 'Профиль успешно заполнен' : 'Профиль обновлен',
+          [
+            { 
+              text: 'OK', 
+              onPress: () => {
+                // Если это первый вход (регистрация), перенаправляем на главную
+                if (isFirstTime) {
+                  navigation.replace('MainTabs'); 
+                }
+              } 
+            }
+          ]
+        );
         return true;
       }
       return false;

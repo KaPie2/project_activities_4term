@@ -11,19 +11,24 @@ import {
   SafeAreaView,
   StatusBar,
 } from 'react-native';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, CompositeNavigationProp } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
-import { AppStackParamList } from '../navigation/AppNavigator';
+import { BottomTabNavigationProp } from '@react-navigation/bottom-tabs';
+import { RootStackParamList, MainTabParamList } from '../navigation/AppNavigator'; // вместо AppStackParamLIst -> MainTabParamList, потому что его не было в AppNavigator и я поменял
 import { useAuth } from '../hooks/useAuth';
 import { useFeed } from '../hooks/useFeed';
 import { FeedItemComponent } from '../components/FeedItem';
 import { Ionicons } from '@expo/vector-icons';
 
-type MainScreenNavigationProp = StackNavigationProp<AppStackParamList, 'Home'>
+//type MainScreenNavigationProp = StackNavigationProp<MainTabParamList, 'Home'>
+type NavigationProp = CompositeNavigationProp<
+  BottomTabNavigationProp<MainTabParamList, 'Home'>,
+  StackNavigationProp<RootStackParamList>
+>;
 
 
 export function MainScreen(){
-  const navigation = useNavigation<MainScreenNavigationProp>();
+  const navigation = useNavigation<NavigationProp>();
   const { user } = useAuth();
   const { item, loading, error, hasMore, refreshFeed, loadMore } = useFeed();
 

@@ -39,11 +39,18 @@ export function useFeed(){
     const owner = data.wishlists?.users;
     return {
         ...item,
+        // Явно вызываем геттеры класса, иначе они теряются при деструктуризации
+        isAvailable: item.isAvailable,
+        isReserved: item.isReserved,
+        formattedPrice: item.formattedPrice,
+        formattedCreatedAt: item.formattedCreatedAt,
+        
+        // Поля владельца
         ownerId: data.wishlists?.user_id,
         ownerLogin: owner?.login,
         ownerName: owner?.name,
         ownerAvatar: owner?.avatar_url,
-        wishlistTitle: data.wishlists?.title, // добавляем
+        wishlistTitle: data.wishlists?.title,
     };
     };
 
@@ -124,6 +131,7 @@ export function useFeed(){
     item,
     loading,
     error,
+    hasMore,
     fetchFeed,
     refreshFeed,
     loadMore

@@ -23,11 +23,12 @@ export function RegisterScreen() {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [confirmPassword, setConfirmPassword] = useState('');
+  const [rememberMe, setRememberMe] = useState(false);
   // const [pendingProfileData, setPendingProfileData] = useState<{ email: string; login: string } | null>(null);
 
   const handleRegister = async () => {
     // Валидация
-    if (!email || !password || !login || !confirmPassword) {
+    if (!email || !password || !confirmPassword) {
       Alert.alert('Ошибка', 'Заполните все поля');
       return;
     }
@@ -36,13 +37,6 @@ export function RegisterScreen() {
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(email)) {
       Alert.alert('Ошибка', 'Введите корректный email');
-      return;
-    }
-    
-    // Валидация логина
-    const loginRegex = /^[a-zA-Z0-9_]{3,20}$/;
-    if (!loginRegex.test(login)) {
-      Alert.alert('Ошибка', 'Логин должен содержать 3-20 символов (буквы, цифры, _)');
       return;
     }
     
@@ -58,15 +52,18 @@ export function RegisterScreen() {
     
     // Регистрация
     const result = await signUp(email, password, login);
+
+    if (!result.success) {
+      Alert.alert('Ошибка регистрации', result.error);
+    }
     
-    if (result.success) {
+    // if (result.success) {
     //   // ✅ ДАННЫЕ УЖЕ В БД! Просто переходим на EditProfile
     //   navigation.replace('EditProfile');
     // } else {
-      Alert.alert('Ошибка регистрации', result.error);
-    }
+    //   Alert.alert('Ошибка регистрации', result.error);
+    // }
   };
-
 
   return (
     <View style={styles.container}>
@@ -95,22 +92,6 @@ export function RegisterScreen() {
             <Text style={styles.title}>Регистрация</Text>
             <View style={styles.divider} />
 
-            {/* Поле Логин */}
-            <View style={styles.inputGroup}>
-              <Text style={styles.label}>Логин</Text>
-              <View style={styles.loginWrapper}>
-                <Text style={styles.atSymbol}>@</Text>
-                <TextInput 
-                  style={styles.loginInput}
-                  placeholder="username"
-                  value={login}
-                  onChangeText={(text) => setLogin(text.toLowerCase().replace(/[^a-z0-9_]/g, ''))}
-                  autoCapitalize="none"
-                  editable={!loading}
-                />
-              </View>
-            </View>
-
             {/* Поле Email */}
             <View style={styles.inputGroup}>
               <Text style={styles.label}>Email</Text>
@@ -132,7 +113,7 @@ export function RegisterScreen() {
                 <TextInput 
                   style={styles.passwordInput} 
                   secureTextEntry={!showPassword}
-                  placeholder="Минимум 6 символов"
+                  placeholder="·················"
                   value={password}
                   onChangeText={setPassword}
                   editable={!loading}
@@ -150,7 +131,7 @@ export function RegisterScreen() {
                 <TextInput 
                   style={styles.passwordInput} 
                   secureTextEntry={!showConfirmPassword}
-                  placeholder="Повторите пароль"
+                  placeholder="·················"
                   value={confirmPassword}
                   onChangeText={setConfirmPassword}
                   editable={!loading}
@@ -160,6 +141,14 @@ export function RegisterScreen() {
                 </TouchableOpacity>
               </View>
             </View>
+
+            {/* Запомнить меня */}
+            <TouchableOpacity style={styles.checkboxRow} onPress={() => setRememberMe(!rememberMe)}>
+              <View style={[styles.checkbox, rememberMe && styles.checkboxChecked]}>
+                  {rememberMe && <View style={styles.checkboxInner} />}
+              </View>
+              <Text style={styles.checkboxText}>Запомнить меня</Text>
+            </TouchableOpacity>
 
             <TouchableOpacity 
               style={[styles.buttonMain, loading && styles.buttonDisabled]} 
@@ -185,7 +174,7 @@ export function RegisterScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#FFF' },
+  container: { flex: 1, backgroundColor: '#FCFAF7' },
   headerImageContainer: {
     position: 'absolute',
     top: 0,
@@ -221,7 +210,7 @@ const styles = StyleSheet.create({
   label: { fontSize: 18, marginBottom: 8, color: '#000' },
   input: {
     height: 60,
-    backgroundColor: '#F3F3F3',
+    backgroundColor: '#E7E8E1',
     borderRadius: 30,
     paddingHorizontal: 25,
     fontSize: 16,
@@ -231,7 +220,7 @@ const styles = StyleSheet.create({
   loginWrapper: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#F3F3F3',
+    backgroundColor: '#E7E8E1',
     borderRadius: 30,
     paddingHorizontal: 20,
     borderWidth: 1,
@@ -250,14 +239,17 @@ const styles = StyleSheet.create({
   passwordWrapper: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#F3F3F3',
+    backgroundColor: '#E7E8E1',
     borderRadius: 30,
     paddingHorizontal: 20,
     borderWidth: 1,
     borderColor: '#333',
     height: 60,
   },
-  passwordInput: { flex: 1, fontSize: 16 },
+  passwordInput: { 
+    flex: 1, 
+    fontSize: 16,
+  },
   buttonMain: {
     backgroundColor: '#1A1A1A',
     height: 65,
@@ -271,6 +263,34 @@ const styles = StyleSheet.create({
   buttonDisabled: {
     backgroundColor: '#999',
     opacity: 0.7,
+  },
+  checkboxRow: { 
+    flexDirection: 'row', 
+    alignItems: 'center', 
+    marginTop: 10 
+  },
+  checkbox: {
+    width: 22,
+    height: 22,
+    borderRadius: 11,
+    borderWidth: 2,
+    borderColor: '#000',
+    marginRight: 10,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  checkboxChecked: { 
+    backgroundColor: '#FFF' 
+  },
+  checkboxInner: { 
+    width: 10, 
+    height: 10, 
+    borderRadius: 5, 
+    backgroundColor: '#000' 
+  },
+  checkboxText: { 
+    fontSize: 16, 
+    color: '#000' 
   },
   buttonMainText: { color: '#FFF', fontSize: 18, fontWeight: 'bold', letterSpacing: 2 },
   footer: { flexDirection: 'row', justifyContent: 'center', marginTop: 20, marginBottom: 40 },
