@@ -145,7 +145,9 @@ export function RegisterScreen() {
             {/* Запомнить меня */}
             <TouchableOpacity style={styles.checkboxRow} onPress={() => setRememberMe(!rememberMe)}>
               <View style={[styles.checkbox, rememberMe && styles.checkboxChecked]}>
-                  {rememberMe && <View style={styles.checkboxInner} />}
+                  {rememberMe && (
+                    <Ionicons name="checkmark" size={16} color="white" />
+                  )}
               </View>
               <Text style={styles.checkboxText}>Запомнить меня</Text>
             </TouchableOpacity>
@@ -280,7 +282,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   checkboxChecked: { 
-    backgroundColor: '#FFF' 
+    backgroundColor: '#1A1A1A', 
   },
   checkboxInner: { 
     width: 10, 
