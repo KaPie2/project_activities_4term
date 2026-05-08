@@ -1,15 +1,15 @@
 import React, { useState, useEffect } from 'react';
 import { 
   View, Text, StyleSheet, TouchableOpacity, TextInput, Image, 
-  Dimensions, KeyboardAvoidingView, Platform, ScrollView, Alert, ActivityIndicator 
+  Dimensions, KeyboardAvoidingView, Platform, ScrollView, Alert, ActivityIndicator, Modal 
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { AppStackParamList } from '../navigation/AppNavigator';
-import { BlurView } from 'expo-blur';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../hooks/useAuth';
 import { supabase } from '../services/supabase';
+import DateTimePicker from '@react-native-community/datetimepicker';
 
 const { width, height } = Dimensions.get('window');
 type EditProfileScreenNavigationProp = StackNavigationProp<AppStackParamList, 'EditProfile'>;
@@ -26,6 +26,9 @@ export function EditProfileScreen() {
   const [isLoginUnique, setIsLoginUnique] = useState(true);
   const [isCheckingLogin, setIsCheckingLogin] = useState(false);
   const [hasChanges, setHasChanges] = useState(false);
+  const [showDatePicker, setShowDatePicker] = useState(false);
+  const [date, setDate] = useState(new Date());
+  const [tempDate, setTempDate] = useState(new Date()); // Временная дата для выбора
   const [initialData, setInitialData] = useState({
     name: '',
     login: '',
@@ -33,30 +36,6 @@ export function EditProfileScreen() {
   });
 
   const isFirstTime = !user?.name || !user?.birthDate;
-
-  // Форматирование даты рождения
-  const formatDate = (text: string) => {
-    // Удаляем все нецифровые символы
-    const cleaned = text.replace(/[^0-9]/g, '');
-    
-    // Ограничиваем длину
-    let formatted = cleaned.slice(0, 8);
-    
-    // Добавляем точки
-    if (formatted.length > 2) {
-      formatted = formatted.slice(0, 2) + '.' + formatted.slice(2);
-    }
-    if (formatted.length > 5) {
-      formatted = formatted.slice(0, 5) + '.' + formatted.slice(5);
-    }
-    
-    return formatted;
-  };
-
-  const handleBirthDateChange = (text: string) => {
-    const formatted = formatDate(text);
-    setBirthDate(formatted);
-  };
 
   // Валидация даты рождения
   const validateBirthDate = (date: string) => {
@@ -74,6 +53,34 @@ export function EditProfileScreen() {
     
     return true;
   };
+
+  const handleEditAvatar = () => {
+    console.log('--- Действие: Изменение аватарки ---');
+    console.log('Статус пользователя:', user ? 'Авторизован' : 'Гость');
+    console.log('ID пользователя:', user?.id || 'не определен');
+    console.log('Время нажатия:', new Date().toLocaleTimeString());
+    
+    // Здесь в будущем будет вызов ImagePicker или ActionSheet
+    Alert.alert("Редактирование", "Здесь откроется выбор фото из галереи");
+  };
+
+  const onDateChange = (event: any, selectedDate?: Date) => {
+    if (Platform.OS === 'android') {
+      setShowDatePicker(false);
+    }
+
+    if (selectedDate) {
+      setDate(selectedDate);
+      const day = String(selectedDate.getDate()).padStart(2, '0');
+      const month = String(selectedDate.getMonth() + 1).padStart(2, '0');
+      const year = selectedDate.getFullYear();
+      setBirthDate(`${day}.${month}.${year}`);
+    } else {
+      // Если нажали "Отмена" на Android
+      setShowDatePicker(false);
+    }
+  };
+
 
   // Загружаем данные из user
   useEffect(() => {
@@ -167,66 +174,64 @@ export function EditProfileScreen() {
   };
 
   const handleSave = async () => {
-    if (!name || !name.trim()) {
-      Alert.alert('Ошибка', 'Введите имя');
-      return;
-    }
-    
-    if (!login || !login.trim()) {
-      Alert.alert('Ошибка', 'Введите логин');
-      return;
-    }
-    
-    if (!birthDate || !birthDate.trim()) {
-      Alert.alert('Ошибка', 'Введите дату рождения');
-      return;
-    }
-    
-    if (!validateBirthDate(birthDate)) {
-      Alert.alert('Ошибка', 'Введите корректную дату рождения в формате ДД.ММ.ГГГГ');
-      return;
-    }
+    // 1. Оставляем все твои проверки (if !name, if !login и т.д.)
+    if (!name || !name.trim()) { Alert.alert('Ошибка', 'Введите имя'); return; }
+    if (!login || !login.trim()) { Alert.alert('Ошибка', 'Введите логин'); return; }
+    if (!birthDate || !birthDate.trim()) { Alert.alert('Ошибка', 'Введите дату рождения'); return; }
+    if (!validateBirthDate(birthDate)) { Alert.alert('Ошибка', 'Неверный формат даты'); return; }
     
     const loginRegex = /^[a-zA-Z0-9_]{3,20}$/;
-    if (!loginRegex.test(login)) {
-      Alert.alert('Ошибка', 'Логин должен содержать 3-20 символов (буквы, цифры, _)');
-      return;
-    }
-    
-    if (!isLoginUnique) {
-      Alert.alert('Ошибка', 'Этот логин уже занят');
-      return;
-    }
-    
+    if (!loginRegex.test(login)) { Alert.alert('Ошибка', 'Неверный логин'); return; }
+    if (!isLoginUnique) { Alert.alert('Ошибка', 'Логин занят'); return; }
+
+    // 2. Начало процесса сохранения
     setLoading(true);
+    console.log('--- Начинаем сохранение ---');
 
     const convertToISO = (dateStr: string) => {
-    const [day, month, year] = dateStr.split('.');
-    return `${year}-${month}-${day}`;
-  };
-  
-    const result = await updateUserProfile({
-      name: name.trim(),
-      login: login.trim().toLowerCase(),
-      birthDate: convertToISO(birthDate), // ← преобразуем формат
-    });
-    
-    setLoading(false);
-    
-    if (result) {
-      setHasChanges(false);
-      setInitialData({ name, login, birthDate });
-      if (isFirstTime) {
-        Alert.alert('Успех!', 'Профиль успешно заполнен', [
-          { text: 'В приложение', onPress: () => navigation.replace('Home') }
-        ]);
+      const [day, month, year] = dateStr.split('.');
+      return `${year}-${month}-${day}`;
+    };
+
+    try {
+      const isoDate = convertToISO(birthDate);
+      console.log('Данные для отправки:', { name, login, isoDate });
+
+      // ВЫЗОВ ХУКА (здесь код раньше мог обрываться)
+      const result = await updateUserProfile({
+        name: name.trim(),
+        login: login.trim().toLowerCase(),
+        birthDate: isoDate,
+      });
+
+      console.log('Результат хука:', result);
+
+      if (result) {
+        setHasChanges(false);
+        setInitialData({ name, login, birthDate });
+        
+        if (isFirstTime != null) { // Убрать != null
+          Alert.alert('Успех!', 'Профиль успешно заполнен', [
+            { text: 'В приложение', onPress: () => { }}
+          ]);
+        } else {
+          Alert.alert('Успех!', 'Профиль обновлен');
+        }
       } else {
-        Alert.alert('Успех!', 'Профиль обновлен');
+        // Если хук вернул false
+        Alert.alert('Ошибка', 'База данных не подтвердила сохранение');
       }
-    } else {
-      Alert.alert('Ошибка', 'Не удалось сохранить профиль');
+
+    } catch (error: any) {
+      // Если произошла любая программная ошибка, она выведется здесь
+      console.error('КРИТИЧЕСКАЯ ОШИБКА:', error);
+      Alert.alert('Ошибка', error.message || 'Сбой при отправке данных');
+    } finally {
+      setLoading(false);
+      console.log('--- Процесс завершен ---');
     }
   };
+
 
   const handleChangePassword = () => {
     Alert.alert('Изменение пароля', 'Эта функция будет доступна в следующей версии');
@@ -268,249 +273,317 @@ export function EditProfileScreen() {
     );
   }
 
+// ... внутри компонента
+
   return (
     <View style={styles.container}>
-      <View style={styles.headerImageContainer}>
-        <Image 
-          source={require('../assets/Leo_lines.png')} 
-          style={styles.spotsImage}
-          resizeMode="cover"
-        />
-      </View>
+      <Image 
+        source={require('../assets/bubble.png')} // Замени на свое название файла
+        style={styles.topRightBubble}
+        resizeMode="contain"
+      />
 
       <KeyboardAvoidingView 
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'} 
         style={{ flex: 1 }}
       >
-        <ScrollView 
+        <ScrollView
+          scrollEnabled={false}
           showsVerticalScrollIndicator={false}
           contentContainerStyle={styles.scrollContent}
         >
-          <View style={{ height: height * 0.15 }} />
+          {/* Кнопка назад */}
+          <TouchableOpacity style={styles.backButton} onPress={handleBack}>
+            <Image 
+              source={require('../assets/back_icon.png')} // Убедись, что название файла совпадает
+              style={styles.backArrowImage}
+              resizeMode="contain"
+            />
+          </TouchableOpacity>
 
-          <View style={styles.formContainer}>
-            <BlurView intensity={40} tint="light" style={StyleSheet.absoluteFill} />
-            
-            <TouchableOpacity style={styles.backButton} onPress={handleBack}>
-              <Ionicons name="arrow-back" size={24} color="#333" />
-            </TouchableOpacity>
-            
-            <View style={styles.avatarContainer}>
-              <Image 
-                source={require('../assets/default-avatar.png')} 
-                style={styles.avatar}
-                defaultSource={require('../assets/default-avatar.png')}
-              />
-              <TouchableOpacity style={styles.editAvatarButton}>
-                <Ionicons name="camera" size={20} color="#FFF" />
-              </TouchableOpacity>
-            </View>
-
-            <Text style={styles.title}>{isFirstTime ? 'Заполните профиль' : 'Редактирование профиля'}</Text>
-            <View style={styles.divider} />
-
-            <View style={styles.inputGroup}>
-              <Text style={styles.label}>Имя *</Text>
-              <TextInput 
-                style={styles.input} 
-                placeholder="Ваше имя"
-                value={name}
-                onChangeText={setName}
-                autoCapitalize="words"
-              />
-            </View>
-
-            <View style={styles.inputGroup}>
-              <Text style={styles.label}>Логин *</Text>
-              <View style={[styles.loginWrapper, !isLoginUnique && styles.inputError]}>
-                <Text style={styles.atSymbol}>@</Text>
-                <TextInput 
-                  style={styles.loginInput}
-                  placeholder="username"
-                  value={login}
-                  onChangeText={(text) => {
-                    const cleanText = text.toLowerCase().replace(/[^a-z0-9_]/g, '');
-                    setLogin(cleanText);
-                    checkLoginUnique(cleanText);
-                  }}
-                  autoCapitalize="none"
+          <View style={styles.contentWrapper}>
+            {/* Белая карточка */}
+            <View style={styles.mainCard}>
+              
+              {/* Аватар с декоративными точками */}
+              <View style={styles.avatarSection}>
+                <Image 
+                  source={require('../assets/edit_avatar_spots.png')} // Те самые черные точки вокруг
+                  style={styles.dotsDecoration}
                 />
-                {isCheckingLogin && <ActivityIndicator size="small" color="#999" />}
-                {!isCheckingLogin && login && !isLoginUnique && (
-                  <Ionicons name="close-circle" size={20} color="#FF0000" />
-                )}
-                {!isCheckingLogin && login && isLoginUnique && login !== user?.login && (
-                  <Ionicons name="checkmark-circle" size={20} color="#4CAF50" />
-                )}
+                {/* Сама кнопка-аватар */}
+                <TouchableOpacity style={styles.avatarCircle} activeOpacity={0.8} onPress={handleEditAvatar}>
+                  <Image 
+                    source={require('../assets/default-avatar.png')} // Тот самый кот
+                    style={styles.avatarImg}
+                  />
+                  
+                  {/* Белая иконка камеры по центру */}
+                  <View style={styles.cameraOverlay}>
+                    <Image source={require('../assets/camera_icon.png')} style={{width: 50, height: 50}} /> 
+                  </View>
+                </TouchableOpacity>
               </View>
-              {!isLoginUnique && (
-                <Text style={styles.errorText}>Этот логин уже занят</Text>
-              )}
+
+              <View style={styles.inputsWrapper}>
+                {/* Имя */}
+                <View style={styles.fieldContainer}>
+                  <Text style={styles.inputLabel}>Имя*</Text>
+                  <TextInput 
+                    style={styles.roundedInput}
+                    placeholder="Имя"
+                    value={name}
+                    onChangeText={setName}
+                  />
+                </View>
+
+                {/* Логин */}
+                <View style={styles.fieldContainer}>
+                  <Text style={styles.inputLabel}>Логин*</Text>
+                  <TextInput 
+                    style={styles.roundedInput}
+                    placeholder="@Имя"
+                    value={login}
+                    onChangeText={setLogin}
+                  />
+                </View>
+
+                {/* Email */}
+                <View style={styles.fieldContainer}>
+                  <Text style={styles.inputLabel}>Email*</Text>
+                  <TextInput 
+                    style={styles.roundedInput}
+                    placeholder="your.email@mail.ru"
+                    value={email}
+                    editable={false}
+                  />
+                </View>
+
+                {/* Дата рождения */}
+                <View style={styles.fieldContainer}>
+                  <Text style={styles.inputLabel}>Дата рождения</Text>
+                  
+                  {/* Обернули в TouchableOpacity, чтобы всё поле было кликабельным */}
+                  <TouchableOpacity 
+                    onPress={() => setShowDatePicker(true)}
+                    activeOpacity={1}
+                  >
+                    <View style={styles.inputWithIcon} pointerEvents="none"> 
+                      {/* pointerEvents="none" нужен, чтобы нажатие пролетало сквозь TextInput к TouchableOpacity */}
+                      <TextInput 
+                        style={styles.flexInput}
+                        placeholder="·················"
+                        value={birthDate}
+                        editable={false} // Теперь поле только для отображения
+                      />
+                      <Ionicons name="calendar-outline" size={24} color="#000" />
+                    </View>
+                  </TouchableOpacity>
+                </View>
+
+                {/* Изменить пароль */}
+                <TouchableOpacity style={styles.passwordRow} onPress={handleChangePassword}>
+                  <Text style={styles.passwordText}>Изменить пароль</Text>
+                  <Image 
+                    source={require('../assets/forward_icon.png')} // Убедись, что название файла совпадает
+                    style={styles.backArrowImage}
+                    resizeMode="contain"
+                  />
+                </TouchableOpacity>
+
+                {/* Удалить аккаунт */}
+                <TouchableOpacity style={styles.deleteButton} onPress={handleDeleteAccount}>
+                  <Text style={styles.deleteText}>Удалить аккаунт</Text>
+                </TouchableOpacity>
+              </View>
             </View>
 
-            <View style={styles.inputGroup}>
-              <Text style={styles.label}>Email *</Text>
-              <TextInput 
-                style={[styles.input, styles.disabledInput]} 
-                value={email}
-                editable={false}
-              />
-            </View>
-
-            {/* Поле даты рождения с маской */}
-            <View style={styles.inputGroup}>
-              <Text style={styles.label}>Дата рождения *</Text>
-              <TextInput 
-                style={styles.input} 
-                placeholder="ДД.ММ.ГГГГ"
-                value={birthDate}
-                onChangeText={handleBirthDateChange}
-                keyboardType="numeric"
-                maxLength={10}
-              />
-            </View>
-
-            <TouchableOpacity style={styles.changePasswordButton} onPress={handleChangePassword}>
-              <Text style={styles.changePasswordText}>Изменить пароль</Text>
-              <Ionicons name="chevron-forward" size={20} color="#666" />
-            </TouchableOpacity>
-
-            <TouchableOpacity style={styles.deleteButton} onPress={handleDeleteAccount}>
-              <Text style={styles.deleteButtonText}>Удалить аккаунт</Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity 
-              style={[styles.saveButton, (!name || !login || !birthDate || !isLoginUnique || loading) && styles.saveButtonDisabled]} 
-              onPress={handleSave}
-              disabled={!name || !login || !birthDate || !isLoginUnique || loading}
-            >
-              <Text style={styles.saveButtonText}>
-                {loading ? 'СОХРАНЕНИЕ...' : 'СОХРАНИТЬ'}
-              </Text>
+            {/* Кнопка Сохранить (вне карточки) */}
+            <TouchableOpacity style={styles.saveBtn} onPress={handleSave}>
+              <Text style={styles.saveBtnText}>СОХРАНИТЬ</Text>
             </TouchableOpacity>
           </View>
         </ScrollView>
       </KeyboardAvoidingView>
+      {/* Модалка для выбора даты (iOS) */}
+      <Modal
+        transparent={true}
+        visible={showDatePicker}
+        animationType="slide"
+        onRequestClose={() => setShowDatePicker(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <TouchableOpacity 
+            style={{ flex: 1 }} 
+            onPress={() => setShowDatePicker(false)} 
+          />
+          <View style={styles.modalContent}>
+            <View style={styles.modalHeader}>
+              <TouchableOpacity onPress={() => setShowDatePicker(false)}>
+                <Text style={styles.cancelText}>Отмена</Text>
+              </TouchableOpacity>
+              <TouchableOpacity onPress={() => {
+                onDateChange({}, tempDate); // Функция из предыдущего шага
+                setShowDatePicker(false);
+              }}>
+                <Text style={styles.doneText}>Готово</Text>
+              </TouchableOpacity>
+            </View>
+            
+            <DateTimePicker
+              value={tempDate}
+              mode="date"
+              display="spinner" // Для iOS будет крутилка
+              onChange={(event, d) => d && setTempDate(d)}
+              maximumDate={new Date()}
+              locale="ru-RU"
+            />
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 }
 
+
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#FFF' },
+  container: {
+    flex: 1,
+    marginTop: 0,
+    backgroundColor: '#FCFAF7',
+  },
+  backgroundImage: {
+    ...StyleSheet.absoluteFillObject,
+    opacity: 0.5,
+  },
+  scrollContent: {
+    paddingBottom: 40,
+  },
+  backButton: {
+    marginTop: 50,
+    marginLeft: 25,
+    marginBottom: 20,
+  },
+  contentWrapper: {
+    paddingHorizontal: 20,
+    alignItems: 'center',
+    marginTop: 60,
+  },
+  mainCard: {
+    width: '98%',
+    height: '82%',
+    backgroundColor: '#FFFFFF',
+    borderRadius: 40, // Очень сильное скругление как на скрине
+    paddingBottom: 40,
+    alignItems: 'center',
+    // Тень
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.05,
+    shadowRadius: 10,
+    elevation: 3,
+  },
+  avatarSection: {
+    marginTop: -70, // Вынос аватара наверх
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  dotsDecoration: {
+    position: 'absolute',
+    width: 230,
+    height: 230,
+  },
+  avatarCircle: {
+    width: 140,
+    height: 140,
+    borderRadius: 70,
+    backgroundColor: '#1F1F1F',
+    overflow: 'hidden',
+  },
+  avatarImg: {
+    width: '100%',
+    height: '100%',
+  },
+  inputsWrapper: {
+    width: '100%',
+    paddingHorizontal: 30,
+    marginTop: 20,
+  },
+  fieldContainer: {
+    marginBottom: 15,
+  },
+  inputLabel: {
+    fontSize: 20,
+    color: '#333',
+    marginBottom: 8,
+    fontFamily: Platform.OS === 'ios' ? 'System' : 'sans-serif-light',
+  },
+  roundedInput: {
+    backgroundColor: '#E7E8E1', // Цвет инпутов со скрина
+    height: 55,
+    borderRadius: 30,
+    paddingHorizontal: 25,
+    fontSize: 16,
+    color: '#555',
+    borderWidth: 1,          
+    borderColor: '#000000',
+  },
+  inputWithIcon: {
+    backgroundColor: '#E6E7E2',
+    height: 65,
+    borderRadius: 32.5,
+    paddingHorizontal: 25,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    borderWidth: 1,
+    borderColor: '#000',
+  },
+  flexInput: {
+    flex: 1,
+    fontSize: 16,
+  },
+  passwordRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginTop: -12,
+    paddingVertical: 10,
+  },
+  passwordText: {
+    fontSize: 20,
+    color: '#000',
+  },
+  deleteButton: {
+    marginTop: 35,
+    alignItems: 'center',
+  },
+  deleteText: {
+    color: '#E42424',
+    fontSize: 17,
+    fontWeight: 'bold',
+    marginBottom: -20,
+  },
+  saveBtn: {
+    backgroundColor: '#1A1A1A',
+    width: '70%',
+    height: 65,
+    borderRadius: 35,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginTop: 30,
+  },
+  saveBtnText: {
+    color: '#FFF',
+    fontSize: 15,
+    fontWeight: 'bold',
+    letterSpacing: 1,
+  },
   loadingContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
     backgroundColor: '#FFF',
-  },
-  loadingText: {
-    marginTop: 10,
-    fontSize: 16,
-    color: '#666',
-  },
-  backLink: {
-    marginTop: 20,
-    fontSize: 16,
-    color: '#B5D300',
-    textDecorationLine: 'underline',
-  },
-  headerImageContainer: {
-    position: 'absolute',
-    top: 0,
-    width: width,
-    height: height * 0.35,
-  },
-  spotsImage: { width: '120%', height: '130%' },
-  scrollContent: { flexGrow: 1 },
-  formContainer: {
-    flex: 1,
-    paddingHorizontal: 30,
-    paddingTop: 20,
-    paddingBottom: 40,
-    backgroundColor: 'rgba(255, 255, 255, 0.45)',
-    borderTopLeftRadius: 45,
-    borderTopRightRadius: 45,
-    minHeight: height * 0.85,
-    overflow: 'hidden',
-  },
-  backButton: {
-    position: 'absolute',
-    top: 20,
-    left: 20,
-    zIndex: 10,
-    padding: 8,
-  },
-  avatarContainer: {
-    alignItems: 'center',
-    marginBottom: 20,
-    marginTop: 20,
-    position: 'relative',
-  },
-  avatar: {
-    width: 100,
-    height: 100,
-    borderRadius: 50,
-    backgroundColor: '#F3F3F3',
-    borderWidth: 3,
-    borderColor: '#B5D300',
-  },
-  editAvatarButton: {
-    position: 'absolute',
-    bottom: 0,
-    right: width * 0.35,
-    backgroundColor: '#B5D300',
-    borderRadius: 20,
-    padding: 8,
-  },
-  title: {
-    fontSize: 28,
-    fontWeight: '500',
-    color: '#000',
-    textAlign: 'center',
-    marginBottom: 5,
-  },
-  divider: {
-    height: 1,
-    backgroundColor: '#4e4d4d',
-    marginBottom: 25,
-    width: '100%',
-  },
-  inputGroup: { marginBottom: 15 },
-  label: { fontSize: 16, marginBottom: 8, color: '#000', fontWeight: '500' },
-  input: {
-    height: 55,
-    backgroundColor: '#F3F3F3',
-    borderRadius: 30,
-    paddingHorizontal: 20,
-    fontSize: 16,
-    borderWidth: 1,
-    borderColor: '#DDD',
-  },
-  disabledInput: {
-    backgroundColor: '#E8E8E8',
-    color: '#999',
-  },
-  loginWrapper: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#F3F3F3',
-    borderRadius: 30,
-    paddingHorizontal: 20,
-    borderWidth: 1,
-    borderColor: '#DDD',
-    height: 55,
-  },
-  inputError: {
-    borderColor: '#FF0000',
-  },
-  atSymbol: {
-    fontSize: 18,
-    color: '#666',
-    marginRight: 5,
-  },
-  loginInput: {
-    flex: 1,
-    fontSize: 16,
   },
   errorText: {
     fontSize: 12,
@@ -518,44 +591,71 @@ const styles = StyleSheet.create({
     marginTop: 5,
     marginLeft: 15,
   },
-  changePasswordButton: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingVertical: 15,
+  backLink: {
+    marginTop: 20,
+    fontSize: 16,
+    color: '#B5D300',
+    textDecorationLine: 'underline',
+  },
+  loadingText: {
     marginTop: 10,
-    borderBottomWidth: 1,
-    borderBottomColor: '#EEE',
-  },
-  changePasswordText: {
     fontSize: 16,
-    color: '#333',
+    color: '#666',
   },
-  deleteButton: {
-    paddingVertical: 15,
-    marginTop: 5,
+  topRightBubble: {
+    position: 'absolute', // Вырываем из потока
+    top: -80,             // Можно загнать чуть выше за край экрана для мягкости
+    right: -10,           // И чуть правее
+    width: 440,           // Настрой размер под свой экран
+    height: 440,
+    zIndex: 0,        
   },
-  deleteButtonText: {
-    fontSize: 16,
-    color: '#FF0000',
-    textAlign: 'center',
+  backArrowImage: {
+    width: 30, 
+    height: 30, 
   },
-  saveButton: {
-    backgroundColor: '#1A1A1A',
-    height: 55,
-    borderRadius: 30,
+  cameraOverlay: {
+    position: 'absolute',
+    backgroundColor: 'rgba(0, 0, 0, 0.5)', 
+    width: '100%',
+    height: '100%',
     justifyContent: 'center',
     alignItems: 'center',
-    marginTop: 30,
   },
-  saveButtonDisabled: {
-    backgroundColor: '#999',
-    opacity: 0.7,
+  flexInputText: {
+    flex: 1,
+    fontSize: 16,
+    color: '#000',
+    paddingVertical: 15, 
   },
-  saveButtonText: {
-    color: '#FFF',
+    modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.5)', // Затемнение фона
+    justifyContent: 'flex-end',
+  },
+  modalContent: {
+    backgroundColor: '#FFF',
+    borderTopLeftRadius: 30,
+    borderTopRightRadius: 30,
+    paddingBottom: 40,
+    paddingHorizontal: 20,
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    paddingVertical: 15,
+    borderBottomWidth: 1,
+    borderBottomColor: '#EEE',
+    marginBottom: 10,
+  },
+  cancelText: {
+    color: '#FF3B30',
     fontSize: 18,
-    fontWeight: 'bold',
-    letterSpacing: 1,
   },
+  doneText: {
+    color: '#007AFF',
+    fontSize: 18,
+    fontWeight: '600',
+  },
+
 });

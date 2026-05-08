@@ -185,7 +185,7 @@ export function RegisterScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#FFF' },
+  container: { flex: 1, backgroundColor: '#FCFAF7' },
   headerImageContainer: {
     position: 'absolute',
     top: 0,
@@ -221,7 +221,7 @@ const styles = StyleSheet.create({
   label: { fontSize: 18, marginBottom: 8, color: '#000' },
   input: {
     height: 60,
-    backgroundColor: '#F3F3F3',
+    backgroundColor: '#E7E8E1',
     borderRadius: 30,
     paddingHorizontal: 25,
     fontSize: 16,
@@ -231,7 +231,7 @@ const styles = StyleSheet.create({
   loginWrapper: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#F3F3F3',
+    backgroundColor: '#E7E8E1',
     borderRadius: 30,
     paddingHorizontal: 20,
     borderWidth: 1,
@@ -250,14 +250,17 @@ const styles = StyleSheet.create({
   passwordWrapper: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#F3F3F3',
+    backgroundColor: '#E7E8E1',
     borderRadius: 30,
     paddingHorizontal: 20,
     borderWidth: 1,
     borderColor: '#333',
     height: 60,
   },
-  passwordInput: { flex: 1, fontSize: 16 },
+  passwordInput: { 
+    flex: 1, 
+    fontSize: 16,
+  },
   buttonMain: {
     backgroundColor: '#1A1A1A',
     height: 65,
