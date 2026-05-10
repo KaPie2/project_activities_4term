@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -13,13 +13,49 @@ import { useAuth } from '../contexts/AuthContext';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { supabase } from '../services/supabase'; // если ещё не импортирован
+import { supabase } from '../services/supabase';
 
 const { width, height } = Dimensions.get('window');
 
 export function ProfileScreen() {
   const navigation = useNavigation();
   const { user } = useAuth();
+  
+  const [followersCount, setFollowersCount] = useState(0);
+  const [followingCount, setFollowingCount] = useState(0);
+  const [wishlistsCount, setWishlistsCount] = useState(0);
+
+  const fetchCounts = async () => {
+    try {
+      const userId = user?.id;
+      if (!userId) return;
+
+      // Подписчики (кто подписался на меня)
+      const { count: followers } = await supabase
+        .from('friendships')
+        .select('id', { count: 'exact', head: true })
+        .eq('friend_id', userId)
+        .eq('status', 'accepted');
+
+      // Подписки (на кого я подписался)
+      const { count: following } = await supabase
+        .from('friendships')
+        .select('id', { count: 'exact', head: true })
+        .eq('user_id', userId)
+        .eq('status', 'accepted');
+
+      setFollowersCount(followers || 0);
+      setFollowingCount(following || 0);
+    } catch (error) {
+      console.error('Error fetching counts:', error);
+    }
+  };
+
+  useEffect(() => {
+    if (user?.id) {
+      fetchCounts();
+    }
+  }, [user]);
 
   const handleEditProfile = () => {
     navigation.getParent()?.navigate('EditProfile');
@@ -70,15 +106,20 @@ export function ProfileScreen() {
           </View>
         </View>
 
-        {/* Статистика: подписчики | подписки */}
+        {/* Статистика: вишлисты | подписчики | подписки */}
         <View style={styles.statsContainer}>
           <View style={styles.statItem}>
-            <Text style={styles.statNumber}>0</Text>
+            <Text style={styles.statNumber}>{wishlistsCount}</Text>
+            <Text style={styles.statLabel}>вишлистов</Text>
+          </View>
+          <View style={styles.statDivider} />
+          <View style={styles.statItem}>
+            <Text style={styles.statNumber}>{followersCount}</Text>
             <Text style={styles.statLabel}>подписчиков</Text>
           </View>
           <View style={styles.statDivider} />
           <View style={styles.statItem}>
-            <Text style={styles.statNumber}>0</Text>
+            <Text style={styles.statNumber}>{followingCount}</Text>
             <Text style={styles.statLabel}>подписок</Text>
           </View>
         </View>
@@ -100,17 +141,6 @@ export function ProfileScreen() {
             <Ionicons name="heart-outline" size={32} color="#FF69B4" />
           </TouchableOpacity>
         </View>
-
-        <TouchableOpacity 
-          style={styles.debugButton}
-          onPress={async () => {
-            await supabase.auth.signOut();
-            await AsyncStorage.clear();
-            Alert.alert('Сессия очищена', 'Перезапустите приложение');
-          }}
-        >
-          <Text style={styles.debugButtonText}>Очистить сессию (DEBUG)</Text>
-        </TouchableOpacity>
 
         {/* Раздел "Мои вишлисты и подарки" */}
         <View style={styles.wishlistsSection}>
@@ -164,7 +194,7 @@ const styles = StyleSheet.create({
   profileRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginTop: -40, // Аватар на границе фона
+    marginTop: -40,
     marginBottom: 20,
   },
   avatar: {
@@ -277,20 +307,6 @@ const styles = StyleSheet.create({
   },
   createWishlistText: {
     color: '#1A1A1A',
-    fontSize: 14,
-    fontWeight: '600',
-  },
-  debugButton: {
-    backgroundColor: '#FF4444',
-    paddingVertical: 12,
-    paddingHorizontal: 20,
-    borderRadius: 25,
-    marginTop: 20,
-    marginHorizontal: 20,
-    alignItems: 'center',
-  },
-  debugButtonText: {
-    color: '#FFF',
     fontSize: 14,
     fontWeight: '600',
   },

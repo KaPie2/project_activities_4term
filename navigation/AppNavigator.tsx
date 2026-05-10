@@ -6,6 +6,8 @@ import { Ionicons } from '@expo/vector-icons';
 import { EditProfileScreen } from '../screens/EditProfile';
 import { MainScreen } from '../screens/Home';
 import { ProfileScreen } from '../screens/Profile';
+import { OtherProfileScreen } from '../screens/OtherProfile';
+import { SearchScreen } from '../screens/Search';
 
 // Типы для Tab навигатора
 export type MainTabParamList = {
@@ -18,8 +20,10 @@ export type MainTabParamList = {
 
 // Типы для корневого Stack (оба экрана объявлены всегда)
 export type RootStackParamList = {
+  Auth: undefined;
   MainTabs: undefined;
   EditProfile: undefined;
+  OtherProfile: { userId: string }; // ← добавить
 };
 
 const Tab = createBottomTabNavigator<MainTabParamList>();
@@ -31,15 +35,6 @@ function NotificationsScreen() {
     <View style={styles.screenContainer}>
       <Ionicons name="notifications-outline" size={60} color="#ccc" />
       <Text style={styles.emptyText}>Уведомлений пока нет</Text>
-    </View>
-  );
-}
-
-function SearchScreen() {
-  return (
-    <View style={styles.screenContainer}>
-      <Ionicons name="search-outline" size={60} color="#ccc" />
-      <Text style={styles.emptyText}>Поиск вишлистов и подарков</Text>
     </View>
   );
 }
@@ -151,6 +146,10 @@ export function AppNavigator() {
       <RootStack.Screen 
         name="EditProfile" 
         component={EditProfileScreen}
+      />
+      <RootStack.Screen 
+        name="OtherProfile" 
+        component={OtherProfileScreen}
       />
     </RootStack.Navigator>
   );

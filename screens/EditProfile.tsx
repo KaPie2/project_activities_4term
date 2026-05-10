@@ -401,7 +401,7 @@ export function EditProfileScreen() {
           contentContainerStyle={styles.scrollContent}
         >
           {/* Кнопка назад */}
-          <TouchableOpacity style={styles.backButton} onPress={handleBirthDateChange}>
+          <TouchableOpacity style={styles.backButton} onPress={goToProfile}>
             <Image 
               source={require('../assets/back_icon.png')} // Убедись, что название файла совпадает
               style={styles.backArrowImage}
