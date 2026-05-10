@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   View,
   Text,
@@ -8,19 +8,87 @@ import {
   Alert,
   Dimensions,
   Platform,
+  ScrollView,
+  StatusBar,
+  Share,
+  Modal,
+  TouchableWithoutFeedback
 } from 'react-native';
 import { useAuth } from '../contexts/AuthContext';
-import { Ionicons } from '@expo/vector-icons';
+import { Ionicons, Feather } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { supabase } from '../services/supabase';
+import { BlurView } from 'expo-blur';
+import * as Clipboard from 'expo-clipboard';
 
 const { width, height } = Dimensions.get('window');
 
+// --- ОТДЕЛЬНЫЙ КОМПОНЕНТ ПОСТА ---
+export function PostItem({ postId, onOpenMenu }: { 
+  postId: number, 
+  onOpenMenu: (pos: { top: number, right: number }, id: number) => void 
+}) {
+  const ellipsisRef = React.useRef<View>(null);
+
+  const handleLikePost = () => {
+    Alert.alert('Лайк', `Лайк на пост: ${postId}`);
+  };
+
+  const handleDotsPress = () => {
+    if (ellipsisRef.current) {
+      ellipsisRef.current.measure((x, y, w, h, px, py) => {
+        // Вычисляем координаты и передаем их наверх в ProfileScreen
+        onOpenMenu({
+          top: py + h + 2,
+          right: (Dimensions.get('window').width - px) - w + 5
+        }, postId);
+      });
+    }
+  };
+
+  return (
+    <View style={styles.feedPreview}>
+      <View style={styles.feedHeader}>
+        <Image source={require('../assets/default-avatar.png')} style={styles.miniAvatar} />
+        <View>
+          <Text style={styles.feedName}>Имя Фамилия</Text>
+          <View style={styles.folderRow}>
+            <Feather name="arrow-right" size={14} color="#E8479B" />
+            <Text style={styles.folderName}>Имя папки</Text>
+          </View>
+        </View>
+        <TouchableOpacity ref={ellipsisRef} onPress={handleDotsPress} style={{ marginLeft: 'auto', padding: 5 }}>
+          <Ionicons name="ellipsis-vertical" size={20} color="#000" />
+        </TouchableOpacity>
+      </View>
+      
+      <View style={styles.imagePlaceholder}>
+        <Ionicons name="image-outline" size={70} color="#666" />
+      </View>
+      
+      <View style={styles.postInfo}>
+        <Text style={styles.postText}><Text style={styles.bold}>Название:</Text> кофемашина</Text>
+        <Text style={styles.postText}><Text style={styles.bold}>Ссылка:</Text> meowmeowmeow.ru</Text>
+        <Text style={styles.postDescription}>Очень хотелось бы получить на Новый год :)</Text>
+        
+        {/* КНОПКА ЛАЙКА КАК НА СКРИНЕ */}
+        <TouchableOpacity style={styles.postLikeRow} onPress={handleLikePost}>
+            <Ionicons name="heart-outline" size={26} color="#000" />
+            <Text style={styles.likesCount}>число</Text>
+        </TouchableOpacity>
+      </View>
+  </View>
+  );
+}
+
 export function ProfileScreen() {
+  const [isMenuVisible, setIsMenuVisible] = useState(false);
+  const [menuPosition, setMenuPosition] = useState({ top: 0, right: 0 });
+  const [selectedPostId, setSelectedPostId] = useState<number | null>(null); // Запоминаем ID поста
   const navigation = useNavigation();
   const { user } = useAuth();
-  
+  const ellipsisRef = useRef<View>(null);
   const [followersCount, setFollowersCount] = useState(0);
   const [followingCount, setFollowingCount] = useState(0);
   const [wishlistsCount, setWishlistsCount] = useState(0);
@@ -57,257 +125,426 @@ export function ProfileScreen() {
     }
   }, [user]);
 
-  const handleEditProfile = () => {
-    navigation.getParent()?.navigate('EditProfile');
+  const handleEditProfile = () => navigation.getParent()?.navigate('EditProfile');
+  const handleMyBookings = () => Alert.alert('Мои брони', 'В разработке');
+  const handleMyWishlists = () => Alert.alert('Мои вишлисты', 'В разработке');
+  const handleFavorites = () => Alert.alert('Избранное', 'В разработке');
+
+  const handleOpenMenu = (position: { top: number; right: number }, postId: number) => {
+    setMenuPosition(position);
+    setSelectedPostId(postId);
+    setIsMenuVisible(true);
   };
 
-  const handleMyBookings = () => {
-    Alert.alert('Мои брони', 'В разработке');
+  const handleMenuEdit = () => {
+    setIsMenuVisible(false);
+    Alert.alert('Редактировать', `Редактируем пост с ID: ${selectedPostId}`);
   };
 
-  const handleMyWishlists = () => {
-    Alert.alert('Мои вишлисты', 'В разработке');
+  const handleMenuDelete = () => {
+    setIsMenuVisible(false);
+    Alert.alert('Удалить', `Удаляем пост с ID: ${selectedPostId}`, [
+      { text: 'Отмена', style: 'cancel' },
+      { text: 'Удалить', style: 'destructive' },
+    ]);
   };
 
-  const handleFavorites = () => {
-    Alert.alert('Избранное', 'В разработке');
+  const handleCopyTag = async () => {
+    const tag = `@${user?.login || 'user'}`; // Формируем текст тега
+    try {
+      await Clipboard.setStringAsync(tag); // Копируем в буфер обмена
+    } catch (error) {
+      Alert.alert('Ошибка', 'Не удалось скопировать тег');
+      console.error(error);
+    }
   };
 
   return (
-    <View style={styles.container}>
-      {/* Фоновое изображение - занимает 1/4 экрана */}
-      <Image
-        source={require('../assets/Leo_lines.png')}
-        style={styles.backgroundImage}
-        resizeMode="cover"
-      />
-
-      {/* Шапка с иконкой настроек */}
-      <View style={styles.header}>
-        <TouchableOpacity
-          style={styles.settingsButton}
-          onPress={handleEditProfile}
-        >
-          <Ionicons name="settings-outline" size={24} color="#333" />
+    <View style={styles.mainContainer}>
+      <StatusBar barStyle="dark-content" translucent backgroundColor="transparent" />
+      
+      {/* 1. СТАТИЧНЫЙ ФОН */}
+      <View style={styles.fixedBackground}>
+        <Image
+          source={require('../assets/background_profile.png')}
+          style={styles.backgroundImage}
+          resizeMode="cover"
+        />
+        <TouchableOpacity style={styles.settingsButton} onPress={handleEditProfile}>
+          <Image 
+            source={require('../assets/edit_profile_icon.png')}
+            style={styles.editProfileImage} 
+          />
         </TouchableOpacity>
       </View>
 
-      {/* Основной контент */}
-      <View style={styles.content}>
-        {/* Аватар и имя в одной строке */}
-        <View style={styles.profileRow}>
-          <Image
-            source={require('../assets/default-avatar.png')}
-            style={styles.avatar}
-          />
-          <View style={styles.userInfo}>
-            <Text style={styles.userName}>{user?.name || 'Пользователь'}</Text>
-            <Text style={styles.userLogin}>@{user?.login || 'username'}</Text>
-          </View>
-        </View>
+      {/* 2. СКРОЛЛЯЩАЯСЯ ЧАСТЬ */}
+      <ScrollView 
+        style={styles.scrollView} 
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={styles.scrollContent}
+      >
+        {/* Окно для фона */}
+        <View style={styles.headerSpacer} />
 
-        {/* Статистика: вишлисты | подписчики | подписки */}
-        <View style={styles.statsContainer}>
-          <View style={styles.statItem}>
-            <Text style={styles.statNumber}>{wishlistsCount}</Text>
-            <Text style={styles.statLabel}>вишлистов</Text>
-          </View>
-          <View style={styles.statDivider} />
-          <View style={styles.statItem}>
-            <Text style={styles.statNumber}>{followersCount}</Text>
-            <Text style={styles.statLabel}>подписчиков</Text>
-          </View>
-          <View style={styles.statDivider} />
-          <View style={styles.statItem}>
-            <Text style={styles.statNumber}>{followingCount}</Text>
-            <Text style={styles.statLabel}>подписок</Text>
-          </View>
-        </View>
-
-        {/* Кнопки действий в один ряд */}
-        <View style={styles.actionsRow}>
-          {/* Мои брони - большая кнопка на полэкрана */}
-          <TouchableOpacity style={styles.bookingsButton} onPress={handleMyBookings}>
-            <Text style={styles.bookingsButtonText}>Мои брони</Text>
-          </TouchableOpacity>
-
-          {/* Вишлисты - только иконка */}
-          <TouchableOpacity style={styles.iconButton} onPress={handleMyWishlists}>
-            <Ionicons name="gift-outline" size={32} color="#B5D300" />
-          </TouchableOpacity>
-
-          {/* Избранное - только иконка */}
-          <TouchableOpacity style={styles.iconButton} onPress={handleFavorites}>
-            <Ionicons name="heart-outline" size={32} color="#FF69B4" />
-          </TouchableOpacity>
-        </View>
-
-        {/* Раздел "Мои вишлисты и подарки" */}
-        <View style={styles.wishlistsSection}>
-          <Text style={styles.sectionTitle}>Мои вишлисты и подарки</Text>
-          <View style={styles.emptyState}>
-            <Ionicons name="gift-outline" size={50} color="#ccc" />
-            <Text style={styles.emptyText}>Пока ничего нет</Text>
-            <TouchableOpacity style={styles.createWishlistButton}>
-              <Text style={styles.createWishlistText}>Создать вишлист</Text>
+        {/* Инфо пользователя (Имя и Тег)*/}
+        <View style={styles.floatingUserInfo}>
+          <Text style={styles.userName}>{user?.name || 'Имя Фамилия'}</Text>
+          <View style={styles.loginContainer}>
+            <Text style={styles.userLogin}>@{user?.login || 'user'}</Text>
+            {/* Иконка копирования теперь кликабельна */}
+            <TouchableOpacity onPress={handleCopyTag} hitSlop={{top: 10, bottom: 10, left: 10, right: 10}}>
+              <Ionicons name="copy-outline" size={20} color="#000" style={{ marginLeft: 8 }} />
             </TouchableOpacity>
           </View>
         </View>
-      </View>
+
+        {/* БЕЛАЯ КАРТОЧКА */}
+        <View style={styles.whiteCard}>
+          
+          {/* Подписки и подписчики -> сделать чтобы отображалось число из бд*/}
+          <View style={styles.statsContainer}>
+            <View style={styles.statItem}>
+              <Text style={styles.statNumber}>{followingCount}</Text>
+              <Text style={styles.statLabel}>Подписки</Text>
+            </View>
+            <View style={styles.statDivider} />
+            <View style={styles.statItem}>
+              <Text style={styles.statNumber}>{followersCount}</Text>
+              <Text style={styles.statLabel}>Подписчики</Text>
+            </View>
+          </View>
+
+          {/* Кнопки действий */}
+          <View style={styles.actionsRow}>
+            <TouchableOpacity style={styles.bookingsButton} onPress={() => handleMyBookings()}>
+              <Text style={styles.bookingsButtonText}>МОИ БРОНИ</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity style={[styles.iconButton, { backgroundColor: '#DBFB3E' }]} onPress={handleMyWishlists}>
+              <Image 
+                source={require('../assets/profile_cal.png')} 
+                style={styles.buttonCustomIcon}
+                resizeMode="contain"
+              />
+            </TouchableOpacity>
+            <TouchableOpacity style={[styles.iconButton, { backgroundColor: '#FF92CB' }]} onPress={handleFavorites}>
+              <Image 
+                source={require('../assets/profile_heart.png')} 
+                style={styles.buttonCustomIcon}
+                resizeMode="contain"
+              />
+            </TouchableOpacity>
+          </View>
+
+          {/* ЛЕНТА ПОСТОВ тут короче заглушка, реализуйте так, чтобы посты из бд подтягивались */}
+          <View style={{ marginTop: 5, paddingBottom: 0 }}>
+            {/* Для проверки выведем 3 поста. У каждого свой ID */}
+            <PostItem postId={1} onOpenMenu={handleOpenMenu} />
+            <PostItem postId={2} onOpenMenu={handleOpenMenu} />
+            <PostItem postId={3} onOpenMenu={handleOpenMenu} />
+            
+            {/* В будущем, когда подключишь базу данных (Supabase), это будет выглядеть так:
+              postsData.map((post) => (
+                <PostItem key={post.id} postId={post.id} onOpenMenu={handleOpenMenu} />
+              ))
+            */}
+          </View>
+        </View>
+
+        {/* АВАТАРКА — опущена ниже и стала больше */}
+        <View style={styles.avatarPositioner}>
+            <Image
+              source={require('../assets/default-avatar.png')}
+              style={styles.avatarImage}
+            />
+        </View>
+      </ScrollView>
+
+      {/* КОМПОНЕНТ МЕНЮ ИЗМЕНЕНИЯ/РЕДАКТИРОВАНИЯ ПОСТА */}
+      <Modal
+        visible={isMenuVisible}
+        transparent={true}
+        animationType="fade"
+        onRequestClose={() => setIsMenuVisible(false)}
+      >
+        {/* Клик по фону закрывает меню */}
+        <TouchableOpacity 
+          style={styles.menuOverlayApple} 
+          activeOpacity={1} 
+          onPress={() => setIsMenuVisible(false)}
+        >
+          {/* Контейнер Liquid Glass, позиционированный под точками */}
+          <View style={[styles.liquidGlassBubble, { top: menuPosition.top, right: menuPosition.right }]}>
+            <BlurView tint="light" intensity={5} style={styles.blurViewApple}>
+              
+              {/* Капсула 1: Редактировать (полностью белая) */}
+              <TouchableOpacity style={styles.appleCapsuleButton} onPress={handleMenuEdit}>
+                <Image source={require('../assets/menu_edit.png')} style={styles.appleMenuIconCustom} resizeMode="contain" />
+                <Text style={styles.appleMenuTextCustom}>Редактировать</Text>
+              </TouchableOpacity>
+
+              {/* Капсула 2: Удалить (полностью белая) */}
+              <TouchableOpacity style={[styles.appleCapsuleButton, styles.appleDeleteCapsule]} onPress={handleMenuDelete}>
+                <Image source={require('../assets/menu_delete.png')} style={styles.appleMenuIconCustom} resizeMode="contain" />
+                <Text style={styles.appleMenuTextCustom}>Удалить</Text>
+              </TouchableOpacity>
+
+            </BlurView>
+          </View>
+        </TouchableOpacity>
+      </Modal>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
+  mainContainer: {
     flex: 1,
     backgroundColor: '#FFF',
   },
-  backgroundImage: {
+  fixedBackground: {
     position: 'absolute',
     top: 0,
     width: width,
     height: height * 0.25,
-    opacity: 0.3,
   },
-  header: {
-    flexDirection: 'row',
-    justifyContent: 'flex-end',
-    paddingHorizontal: 16,
-    paddingTop: Platform.OS === 'ios' ? 50 : 30,
-    paddingBottom: 10,
+  backgroundImage: {
+    width: '100%',
+    height: '100%',
   },
   settingsButton: {
-    padding: 8,
-    backgroundColor: 'rgba(255,255,255,0.9)',
-    borderRadius: 30,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
+    position: 'absolute',
+    top: Platform.OS === 'ios' ? 60 : 40,
+    right: 20,
+    zIndex: 1,
   },
-  content: {
+  editProfileImage: {
+    width: 32,             // Ширина картинки
+    height: 32,            // Высота картинки
+    resizeMode: 'contain', // Чтобы картинка не искажалась, а вписывалась
+  },
+  scrollView: {
     flex: 1,
-    paddingHorizontal: 16,
   },
-  profileRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginTop: -40,
-    marginBottom: 20,
+  headerSpacer: {
+    height: height * 0.11, 
   },
-  avatar: {
-    width: 80,
-    height: 80,
-    borderRadius: 40,
-    borderWidth: 3,
-    borderColor: '#B5D300',
-    backgroundColor: '#F5F5F5',
-  },
-  userInfo: {
-    marginLeft: 16,
-    flex: 1,
+  floatingUserInfo: {
+    paddingLeft: 170, 
+    marginBottom: 10,
   },
   userName: {
-    fontSize: 20,
-    fontWeight: '700',
-    color: '#1A1A1A',
-    marginBottom: 2,
+    fontSize: 24,
+    fontWeight: '800',
+    color: '#000',
+  },
+  loginContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: 2,
   },
   userLogin: {
-    fontSize: 14,
-    color: '#B5D300',
-    fontWeight: '500',
+    fontSize: 16,
+    color: '#444444',
+    fontWeight: '600',
+  },
+  whiteCard: {
+    backgroundColor: '#FFF',
+    borderTopLeftRadius: 35,
+    borderTopRightRadius: 35,
+    minHeight: height,
+    paddingHorizontal: 20,
+    paddingTop: 15,
+  },
+  avatarPositioner: {
+    position: 'absolute',
+    top: height * 0.11, 
+    left: 20,
+    zIndex: 100,
+  },
+  avatarImage: {
+    width: 130, 
+    height: 130,
+    borderRadius: 65,
+    backgroundColor: '#F0F0F0',
   },
   statsContainer: {
     flexDirection: 'row',
-    backgroundColor: '#FFF',
-    marginHorizontal: 0,
-    marginBottom: 24,
-    paddingVertical: 16,
-    justifyContent: 'space-around',
-    borderTopWidth: 1,
-    borderBottomWidth: 1,
-    borderColor: '#F0F0F0',
+    marginLeft: 154,
+    alignItems: 'center',
+    marginBottom: 25,
+    height: 50,
   },
   statItem: {
     alignItems: 'center',
-    flex: 1,
+    paddingRight: 20,
   },
   statNumber: {
     fontSize: 20,
-    fontWeight: '700',
-    color: '#1A1A1A',
+    fontWeight: 'bold',
   },
   statLabel: {
     fontSize: 12,
-    color: '#999',
-    marginTop: 4,
+    color: '#666',
   },
   statDivider: {
     width: 1,
-    backgroundColor: '#E0E0E0',
+    height: 25,
+    backgroundColor: '#EEE',
+    marginRight: 20,
   },
   actionsRow: {
     flexDirection: 'row',
-    alignItems: 'center',
     justifyContent: 'space-between',
-    gap: 12,
-    marginBottom: 32,
+    gap: 18,
+    marginBottom: 20, // Уменьшил отступ, чтобы поднять плашку поста
   },
   bookingsButton: {
-    flex: 2,
-    backgroundColor: '#1A1A1A',
-    paddingVertical: 14,
-    borderRadius: 25,
+    flex: 3,
+    backgroundColor: '#222',
+    height: 60,
+    borderRadius: 15,
+    justifyContent: 'center',
     alignItems: 'center',
   },
   bookingsButtonText: {
     color: '#FFF',
-    fontSize: 14,
-    fontWeight: '600',
+    fontSize: 15,
+    fontWeight: '800',
   },
   iconButton: {
-    flex: 1,
-    backgroundColor: '#F5F5F5',
-    paddingVertical: 14,
-    borderRadius: 25,
-    alignItems: 'center',
+    width: 60,
+    height: 60,
+    borderRadius: 15,
+    borderWidth: 2.2,
+    borderColor: '#000',
     justifyContent: 'center',
-  },
-  wishlistsSection: {
-    flex: 1,
-  },
-  sectionTitle: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: '#1A1A1A',
-    marginBottom: 12,
-  },
-  emptyState: {
     alignItems: 'center',
+    overflow: 'hidden',
+  },
+  feedPreview: {
+    marginTop: -10,
+    paddingTop: 10,
+  },
+  feedHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 10,
+  },
+  miniAvatar: {
+    width: 45,
+    height: 45,
+    borderRadius: 22.5,
+    marginRight: 12,
+  },
+  feedName: {
+    fontSize: 16,
+    fontWeight: '700',
+  },
+  folderRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  folderName: {
+    fontSize: 14,
+    color: '#E8479B',
+    marginLeft: 4,
+  },
+  imagePlaceholder: {
+    width: '100%',
+    aspectRatio: 1,
+    backgroundColor: '#E8E8E8',
+    borderRadius: 15,
     justifyContent: 'center',
-    backgroundColor: '#F8F9FA',
-    borderRadius: 20,
-    paddingVertical: 30,
-    paddingHorizontal: 20,
+    alignItems: 'center',
   },
-  emptyText: {
-    fontSize: 14,
-    color: '#999',
-    marginTop: 10,
-    marginBottom: 12,
+  postInfo: {
+    marginTop: 15,
+    marginBottom: 20,
   },
-  createWishlistButton: {
-    backgroundColor: '#B5D300',
-    paddingHorizontal: 20,
-    paddingVertical: 10,
-    borderRadius: 25,
+  postText: {
+    fontSize: 16,
+    marginBottom: 2,
   },
-  createWishlistText: {
-    color: '#1A1A1A',
-    fontSize: 14,
-    fontWeight: '600',
+  bold: {
+    fontWeight: '700',
+  },
+  postDescription: {
+    fontSize: 15,
+    color: '#444',
+    marginVertical: 8,
+  },
+  postLikeRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: 5,
+  },
+  likesCount: {
+    marginLeft: 8,
+    fontSize: 16,
+    fontWeight: '500',
+  },
+  scrollContent: {
+    paddingBottom: 0,
+  },
+  buttonCustomIcon: {
+    width: 28,  
+    height: 28,
+  },
+  menuOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.4)', 
+    justifyContent: 'center', 
+    alignItems: 'center',    
+  },
+  menuOverlayApple: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.05)', 
+  },
+  liquidGlassBubble: {
+    position: 'absolute',
+    height: 80,
+    width: 150,           
+    borderRadius: 22,
+    overflow: 'hidden',
+    borderWidth: 1.5,
+    borderColor: '#E5E5E5',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 10 },
+    shadowOpacity: 0.1,
+    shadowRadius: 0,
+    elevation: 5,
+  },
+  blurViewApple: {
+    padding: 10,
+  },
+  appleCapsuleButton: {
+    backgroundColor: '#FCFAF7',
+    borderRadius: 30,
+    borderWidth: 0.5,
+    borderColor: '#BABABA',
+    height: 25,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center', 
+    marginBottom: 8,   
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 5,
+  },
+  appleDeleteCapsule: {
+    marginBottom: 0, 
+  },
+  appleMenuIconCustom: {
+    width: 10,
+    height: 12,
+    marginRight: 5,
+  },
+  appleMenuTextCustom: {
+    fontSize: 13,
+    fontWeight: '500',
+    color: '#000000',
   },
 });

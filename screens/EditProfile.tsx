@@ -12,8 +12,6 @@ import { StackNavigationProp } from '@react-navigation/stack';
 import { RootStackParamList } from '../navigation/AppNavigator';
 import DateTimePicker from '@react-native-community/datetimepicker';
 
-const { width, height } = Dimensions.get('window');
-
 export function EditProfileScreen() {
   const navigation = useNavigation<StackNavigationProp<RootStackParamList>>();
   const { user, updateUserProfile, loading: authLoading } = useAuth();
@@ -386,7 +384,7 @@ export function EditProfileScreen() {
   return (
     <View style={styles.container}>
       <Image 
-        source={require('../assets/bubble.png')} // Замени на свое название файла
+        source={require('../assets/bubble.png')}
         style={styles.topRightBubble}
         resizeMode="contain"
       />
@@ -403,7 +401,7 @@ export function EditProfileScreen() {
           {/* Кнопка назад */}
           <TouchableOpacity style={styles.backButton} onPress={goToProfile}>
             <Image 
-              source={require('../assets/back_icon.png')} // Убедись, что название файла совпадает
+              source={require('../assets/back_icon.png')}
               style={styles.backArrowImage}
               resizeMode="contain"
             />
@@ -416,13 +414,13 @@ export function EditProfileScreen() {
               {/* Аватар с декоративными точками */}
               <View style={styles.avatarSection}>
                 <Image 
-                  source={require('../assets/edit_avatar_spots.png')} // Те самые черные точки вокруг
+                  source={require('../assets/edit_avatar_spots.png')}
                   style={styles.dotsDecoration}
                 />
                 {/* Сама кнопка-аватар */}
                 <TouchableOpacity style={styles.avatarCircle} activeOpacity={0.8} onPress={handleEditAvatar}>
                   <Image 
-                    source={require('../assets/default-avatar.png')} // Тот самый кот
+                    source={require('../assets/default-avatar.png')}
                     style={styles.avatarImg}
                   />
                   
@@ -470,8 +468,7 @@ export function EditProfileScreen() {
                 {/* Дата рождения */}
                 <View style={styles.fieldContainer}>
                   <Text style={styles.inputLabel}>Дата рождения</Text>
-                  
-                  {/* Обернули в TouchableOpacity, чтобы всё поле было кликабельным */}
+
                   <TouchableOpacity 
                     onPress={() => setShowDatePicker(true)}
                     activeOpacity={1}
@@ -482,7 +479,7 @@ export function EditProfileScreen() {
                         style={styles.flexInput}
                         placeholder="ДД.ММ.ГГГГ"
                         value={birthDate ? birthDate.split('-').reverse().join('.') : ''}
-                        editable={false} // Теперь поле только для отображения
+                        editable={false} // Поле только для отображения
                       />
                       <Ionicons name="calendar-outline" size={24} color="#000" />
                     </View>
@@ -493,7 +490,7 @@ export function EditProfileScreen() {
                 <TouchableOpacity style={styles.passwordRow} onPress={handleChangePassword}>
                   <Text style={styles.passwordText}>Изменить пароль</Text>
                   <Image 
-                    source={require('../assets/forward_icon.png')} // Убедись, что название файла совпадает
+                    source={require('../assets/forward_icon.png')}
                     style={styles.backArrowImage}
                     resizeMode="contain"
                   />
@@ -509,7 +506,7 @@ export function EditProfileScreen() {
                   onClose={() => setIsDeleteModalVisible(false)} // Функция для закрытия
                   onConfirm={() => {
                     setIsDeleteModalVisible(false);
-                    confirmDeleteAccount(); // Ваша логика удаления
+                    confirmDeleteAccount(); // Логика удаления
                   }}
                 />
               </View>
@@ -544,7 +541,7 @@ export function EditProfileScreen() {
                 value={tempDate}
                 mode="date"
                 display="spinner"
-                onValueChange={(event, d) => d && setTempDate(d)}
+                onChange={(event, d) => d && setTempDate(d)}
                 maximumDate={new Date()}
                 locale="ru-RU"
                 textColor="#000"
@@ -602,10 +599,9 @@ const styles = StyleSheet.create({
     width: '98%',
     height: '82%',
     backgroundColor: '#FFFFFF',
-    borderRadius: 40, // Очень сильное скругление как на скрине
+    borderRadius: 40,
     paddingBottom: 40,
     alignItems: 'center',
-    // Тень
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.05,
@@ -613,7 +609,7 @@ const styles = StyleSheet.create({
     elevation: 3,
   },
   avatarSection: {
-    marginTop: -70, // Вынос аватара наверх
+    marginTop: -70,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -648,7 +644,7 @@ const styles = StyleSheet.create({
     fontFamily: Platform.OS === 'ios' ? 'System' : 'sans-serif-light',
   },
   roundedInput: {
-    backgroundColor: '#E7E8E1', // Цвет инпутов со скрина
+    backgroundColor: '#E7E8E1',
     height: 55,
     borderRadius: 30,
     paddingHorizontal: 25,
@@ -788,7 +784,7 @@ const styles = StyleSheet.create({
   modalContent: {
     width: '100%',
     backgroundColor: 'white',
-    borderRadius: 30, // Сильное скругление как на фото
+    borderRadius: 30, // Сильное скругление
     padding: 25,
     borderWidth: 1,
     borderColor: '#E0E0E0',
@@ -828,7 +824,7 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     fontSize: 14,
     color: '#000',
-    textTransform: 'uppercase', // Капсом как на скрине
+    textTransform: 'uppercase',
   },
   btnTextWhite: {
     fontWeight: '600',
@@ -896,8 +892,7 @@ const styles = StyleSheet.create({
     width: 10,           // Размер самой точки
     height: 10,
     borderRadius: 5,     // Делаем точку круглой
-    backgroundColor: '#D7FF3E', // Тот самый неоновый салатовый (акцент)
-    // Можно добавить легкое свечение для "красоты"
+    backgroundColor: '#D7FF3E',
     shadowColor: '#D7FF3E',
     shadowOffset: { width: 0, height: 0 },
     shadowOpacity: 0.8,
@@ -918,7 +913,7 @@ const styles = StyleSheet.create({
   btnCancelDelete: {
     flex: 1,
     height: 65,
-    backgroundColor: '#D7FF3E', // Тот самый салатовый
+    backgroundColor: '#D7FF3E', 
     borderRadius: 35,
     justifyContent: 'center',
     alignItems: 'center',
@@ -928,7 +923,7 @@ const styles = StyleSheet.create({
   btnDoneDelete: {
     flex: 1,
     height: 65,
-    backgroundColor: '#757575', // Темно-серый
+    backgroundColor: '#757575', 
     borderRadius: 35,
     borderWidth: 0,
     justifyContent: 'center',
