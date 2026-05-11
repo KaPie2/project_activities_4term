@@ -1,35 +1,60 @@
+import React from 'react';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
-import { createStackNavigator, TransitionPresets } from '@react-navigation/stack';
+import {
+  createStackNavigator,
+  TransitionPresets,
+} from '@react-navigation/stack';
 import { View, Text, StyleSheet, TouchableOpacity, Platform } from 'react-native';
+import { useNavigation } from '@react-navigation/native';
 import { useAuth } from '../contexts/AuthContext';
 import { Ionicons } from '@expo/vector-icons';
+
+// Существующие экраны
 import { EditProfileScreen } from '../screens/EditProfile';
 import { MainScreen } from '../screens/Home';
 import { ProfileScreen } from '../screens/Profile';
 import { OtherProfileScreen } from '../screens/OtherProfile';
 import { SearchScreen } from '../screens/Search';
 
+// НОВЫЕ экраны
+import { MyWishlistsScreen } from '../screens/MyWishlists';
+import { WishlistDetailScreen } from '../screens/WishlistDetail';
+import { LikedIdeasScreen } from '../screens/LikedIdeas';
+import { PlusMenuScreen } from '../screens/PlusMenu';
+import { CreateWishlistModalScreen } from '../screens/CreateWishlistModal';
+import { CreateIdeaModalScreen } from '../screens/CreateIdeaModal';
+
+// ──────────────────────────────────────────────────────────────
 // Типы для Tab навигатора
 export type MainTabParamList = {
   Notifications: undefined;
   Home: undefined;
-  Create: undefined;
+  Create: undefined; // визуально кнопка в табе — открывает PlusMenu modal
   Search: undefined;
   Profile: undefined;
 };
 
-// Типы для корневого Stack (оба экрана объявлены всегда)
+// Типы для корневого Stack
 export type RootStackParamList = {
   Auth: undefined;
   MainTabs: undefined;
   EditProfile: undefined;
-  OtherProfile: { userId: string }; // ← добавить
+  OtherProfile: { userId: string };
+
+  // НОВЫЕ маршруты
+  MyWishlists: undefined;
+  WishlistDetail: { wishlistId: string; title: string };
+  LikedIdeas: undefined;
+  PlusMenu: undefined;
+  CreateWishlistModal: undefined;
+  CreateIdeaModal: { wishlistId?: string };
 };
 
 const Tab = createBottomTabNavigator<MainTabParamList>();
 const RootStack = createStackNavigator<RootStackParamList>();
 
-// ------------------- Экран-заглушки -------------------
+// ──────────────────────────────────────────────────────────────
+// Заглушки для табов
 function NotificationsScreen() {
   return (
     <View style={styles.screenContainer}>
@@ -39,57 +64,42 @@ function NotificationsScreen() {
   );
 }
 
-function CreateScreen() {
-  return (
-    <View style={styles.screenContainer}>
-      <Ionicons name="add-circle-outline" size={60} color="#ccc" />
-      <Text style={styles.emptyText}>Создать вишлист или подарок</Text>
-      <TouchableOpacity style={styles.createButton}>
-        <Text style={styles.createButtonText}>Создать вишлист</Text>
-      </TouchableOpacity>
-      <TouchableOpacity style={[styles.createButton, styles.createGiftButton]}>
-        <Text style={styles.createButtonText}>Добавить подарок</Text>
-      </TouchableOpacity>
-    </View>
-  );
+// Невидимый экран — служит "якорем" для вкладки Create.
+// Реальное действие — открытие PlusMenu — делает кастомный tabBarButton ниже.
+function CreatePlaceholder() {
+  return <View style={{ flex: 1, backgroundColor: '#FCFAF7' }} />;
 }
 
-// ------------------- TabNavigator (для MainTabs) -------------------
+// ──────────────────────────────────────────────────────────────
+// TabNavigator
 function MainTabNavigator() {
   return (
     <Tab.Navigator
       screenOptions={({ route }) => ({
         tabBarIcon: ({ focused, color, size }) => {
           let iconName: keyof typeof Ionicons.glyphMap = 'home-outline';
-
-          if (route.name === 'Home') {
-            iconName = focused ? 'home' : 'home-outline';
-          } else if (route.name === 'Notifications') {
+          if (route.name === 'Home') iconName = focused ? 'home' : 'home-outline';
+          else if (route.name === 'Notifications')
             iconName = focused ? 'notifications' : 'notifications-outline';
-          } else if (route.name === 'Create') {
+          else if (route.name === 'Create')
             iconName = focused ? 'add-circle' : 'add-circle-outline';
-          } else if (route.name === 'Search') {
+          else if (route.name === 'Search')
             iconName = focused ? 'search' : 'search-outline';
-          } else if (route.name === 'Profile') {
+          else if (route.name === 'Profile')
             iconName = focused ? 'person' : 'person-outline';
-          }
-
           return <Ionicons name={iconName} size={size} color={color} />;
         },
-        tabBarActiveTintColor: '#B5D300',
+        tabBarActiveTintColor: '#E8479B',
         tabBarInactiveTintColor: '#999',
         tabBarStyle: {
-          backgroundColor: '#FFFFFF',
+          backgroundColor: '#FCFAF7',
           borderTopWidth: 1,
-          borderTopColor: '#EEEEEE',
+          borderTopColor: '#EDE6DC',
           height: Platform.OS === 'ios' ? 85 : 65,
           paddingBottom: Platform.OS === 'ios' ? 25 : 10,
           paddingTop: 8,
         },
-        tabBarLabelStyle: {
-          fontSize: 11,
-          fontWeight: '500',
-        },
+        tabBarLabelStyle: { fontSize: 11, fontWeight: '500' },
         headerShown: false,
       })}
     >
@@ -105,8 +115,11 @@ function MainTabNavigator() {
       />
       <Tab.Screen
         name="Create"
-        component={CreateScreen}
-        options={{ tabBarLabel: 'Создать' }}
+        component={CreatePlaceholder}
+        options={{
+          tabBarLabel: 'Создать',
+          tabBarButton: (props) => <CreateTabButton {...props} />,
+        }}
       />
       <Tab.Screen
         name="Search"
@@ -122,108 +135,101 @@ function MainTabNavigator() {
   );
 }
 
-// ------------------- Корневой навигатор (без условного рендеринга) -------------------
+// Кастомная кнопка центральной вкладки — открывает PlusMenu вместо навигации в таб
+function CreateTabButton(props: any) {
+  const navigation = useNavigation<any>();
+  return (
+    <TouchableOpacity
+      style={[props.style, styles.createBtn]}
+      activeOpacity={0.85}
+      onPress={() => navigation.navigate('PlusMenu')}
+    >
+      <View style={styles.createBtnCircle}>
+        <Ionicons name="add" size={22} color="#1F1F1F" />
+      </View>
+      <Text style={styles.createBtnLabel}>Создать</Text>
+    </TouchableOpacity>
+  );
+}
+
+// ──────────────────────────────────────────────────────────────
+// Корневой Stack
 export function AppNavigator() {
   const { user } = useAuth();
   const needsProfile = !user?.name || !user?.birthDate;
-
-  console.log('🔍 AppNavigator render:', {
-    hasUser: !!user,
-    name: user?.name,
-    birthDate: user?.birthDate,
-    needsProfile,
-  });
 
   return (
     <RootStack.Navigator
       screenOptions={{ headerShown: false }}
       initialRouteName={needsProfile ? 'EditProfile' : 'MainTabs'}
     >
-      <RootStack.Screen 
-        name="MainTabs" 
-        component={MainTabNavigator}
+      <RootStack.Screen name="MainTabs" component={MainTabNavigator} />
+      <RootStack.Screen name="EditProfile" component={EditProfileScreen} />
+      <RootStack.Screen name="OtherProfile" component={OtherProfileScreen} />
+
+      {/* НОВЫЕ — обычные пуш-экраны */}
+      <RootStack.Screen name="MyWishlists" component={MyWishlistsScreen} />
+      <RootStack.Screen name="WishlistDetail" component={WishlistDetailScreen} />
+      <RootStack.Screen name="LikedIdeas" component={LikedIdeasScreen} />
+
+      {/* НОВЫЕ — модалки поверх */}
+      <RootStack.Screen
+        name="PlusMenu"
+        component={PlusMenuScreen}
+        options={{
+          presentation: 'transparentModal',
+          cardStyle: { backgroundColor: 'transparent' },
+          ...TransitionPresets.ModalFadeTransition,
+        }}
       />
-      <RootStack.Screen 
-        name="EditProfile" 
-        component={EditProfileScreen}
+      <RootStack.Screen
+        name="CreateWishlistModal"
+        component={CreateWishlistModalScreen}
+        options={{
+          presentation: 'transparentModal',
+          cardStyle: { backgroundColor: 'transparent' },
+          ...TransitionPresets.ModalFadeTransition,
+        }}
       />
-      <RootStack.Screen 
-        name="OtherProfile" 
-        component={OtherProfileScreen}
+      <RootStack.Screen
+        name="CreateIdeaModal"
+        component={CreateIdeaModalScreen}
+        options={{
+          presentation: 'transparentModal',
+          cardStyle: { backgroundColor: 'transparent' },
+          ...TransitionPresets.ModalFadeTransition,
+        }}
       />
     </RootStack.Navigator>
   );
 }
 
-// ------------------- Стили (как у вас были) -------------------
 const styles = StyleSheet.create({
   screenContainer: {
     flex: 1,
     padding: 20,
-    backgroundColor: '#fff',
+    backgroundColor: '#FCFAF7',
     alignItems: 'center',
     justifyContent: 'center',
   },
-  title: {
-    fontSize: 28,
-    fontWeight: 'bold',
-    marginBottom: 20,
-    textAlign: 'center',
-  },
-  userInfo: {
-    backgroundColor: '#f8f9fa',
-    padding: 20,
-    borderRadius: 15,
-    width: '100%',
-  },
-  avatarPlaceholder: {
+  emptyText: { fontSize: 16, color: '#999', marginTop: 10 },
+
+  createBtn: {
+    flex: 1,
     alignItems: 'center',
-    marginBottom: 20,
+    justifyContent: 'center',
+    paddingTop: 4,
   },
-  infoLabel: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#666',
-    marginTop: 10,
-  },
-  infoValue: {
-    fontSize: 16,
-    color: '#333',
-    marginBottom: 5,
-  },
-  editButton: {
-    backgroundColor: '#B5D300',
-    paddingVertical: 12,
-    paddingHorizontal: 24,
-    borderRadius: 25,
-    marginBottom: 20,
-  },
-  editButtonText: {
-    color: '#1A1A1A',
-    fontSize: 16,
-    fontWeight: '600',
-  },
-  emptyText: {
-    fontSize: 16,
-    color: '#999',
-    marginTop: 10,
-  },
-  createButton: {
-    backgroundColor: '#B5D300',
-    paddingVertical: 12,
-    paddingHorizontal: 24,
-    borderRadius: 25,
-    marginTop: 20,
-    width: '80%',
+  createBtnCircle: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: '#DBFB3E',
+    borderWidth: 2,
+    borderColor: '#1F1F1F',
     alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 2,
   },
-  createGiftButton: {
-    backgroundColor: '#1A1A1A',
-    marginTop: 10,
-  },
-  createButtonText: {
-    color: '#FFF',
-    fontSize: 16,
-    fontWeight: '600',
-  },
+  createBtnLabel: { fontSize: 11, color: '#1F1F1F', fontWeight: '500' },
 });
