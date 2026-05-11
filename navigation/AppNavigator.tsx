@@ -1,5 +1,7 @@
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { createStackNavigator } from '@react-navigation/stack';
+import { useNavigation } from '@react-navigation/native';
+import { StackNavigationProp } from '@react-navigation/stack';
 import { View, Text, Image, StyleSheet, TouchableOpacity, Platform } from 'react-native';
 import { useAuth } from '../contexts/AuthContext';
 import { Ionicons } from '@expo/vector-icons';
@@ -8,6 +10,12 @@ import { MainScreen } from '../screens/Home';
 import { ProfileScreen } from '../screens/Profile';
 import { OtherProfileScreen } from '../screens/OtherProfile';
 import { SearchScreen } from '../screens/Search';
+import { WishlistDetailScreen } from '../screens/WishlistDetail';
+import { CreateIdeaModalScreen } from '../screens/CreateIdeaModal';
+import { CreateWishlistModalScreen } from '../screens/CreateWishlistModal';
+import { MyWishlistsScreen } from '../screens/MyWishlists';
+import { LikedIdeasScreen } from '../screens/LikedIdeas';
+import { PlusMenuScreen } from '../screens/PlusMenu';
 
 export type MainTabParamList = {
   Notifications: undefined;
@@ -22,6 +30,12 @@ export type RootStackParamList = {
   MainTabs: undefined;
   EditProfile: undefined;
   OtherProfile: { userId: string };
+  WishlistDetail: { wishlistId: string; title: string };
+  CreateIdeaModal: { wishlistId?: string };
+  CreateWishlistModal: undefined;
+  MyWishlists: undefined;
+  LikedIdeas: undefined;
+  PlusMenu: undefined;
 };
 
 const Tab = createBottomTabNavigator<MainTabParamList>();
@@ -50,7 +64,7 @@ const TAB_BAR_STYLE = {
   backgroundColor: '#FCFAF7',
   borderTopWidth: 0.5,
   borderTopColor: '#BABABA',
-  height: Platform.OS === 'ios' ? 95 : 65,
+  height: Platform.OS === 'ios' ? 80 : 65,
   paddingBottom: Platform.OS === 'ios' ? 15 : 10,
   paddingTop: 15, // Отступ кнопок от верхней границы
   paddingHorizontal: 50,
@@ -88,6 +102,8 @@ function CreateScreen() {
 }
 
 function MainTabNavigator() {
+  const navigation = useNavigation<StackNavigationProp<RootStackParamList>>();
+
   return (
     <Tab.Navigator
       screenOptions={({ route }) => ({
@@ -134,7 +150,16 @@ function MainTabNavigator() {
     >
       <Tab.Screen name="Notifications" component={NotificationsScreen} />
       <Tab.Screen name="Home"          component={MainScreen} />
-      <Tab.Screen name="Create"        component={CreateScreen} />
+      <Tab.Screen
+        name="Create"
+        component={CreateScreen}
+        listeners={{
+          tabPress: (e) => {
+            e.preventDefault();
+            navigation.navigate('PlusMenu');
+          },
+        }}
+      />
       <Tab.Screen name="Search"        component={SearchScreen} />
       <Tab.Screen name="Profile"       component={ProfileScreen} />
     </Tab.Navigator>
@@ -157,9 +182,39 @@ export function AppNavigator() {
       screenOptions={{ headerShown: false }}
       initialRouteName={needsProfile ? 'EditProfile' : 'MainTabs'}
     >
-      <RootStack.Screen name="MainTabs"    component={MainTabNavigator} />
-      <RootStack.Screen name="EditProfile" component={EditProfileScreen} />
-      <RootStack.Screen name="OtherProfile" component={OtherProfileScreen} />
+      <RootStack.Screen name="MainTabs"             component={MainTabNavigator} />
+      <RootStack.Screen name="EditProfile"           component={EditProfileScreen} />
+      <RootStack.Screen name="OtherProfile"          component={OtherProfileScreen} />
+      <RootStack.Screen name="WishlistDetail"        component={WishlistDetailScreen} />
+      <RootStack.Screen
+        name="CreateIdeaModal"
+        component={CreateIdeaModalScreen}
+        options={{
+          presentation: 'transparentModal',
+          cardOverlayEnabled: false,
+          cardStyle: { backgroundColor: 'transparent' },
+        }}
+      />
+      <RootStack.Screen
+        name="CreateWishlistModal"
+        component={CreateWishlistModalScreen}
+        options={{
+          presentation: 'transparentModal',
+          cardOverlayEnabled: false,
+          cardStyle: { backgroundColor: 'transparent' },
+        }}
+      />
+      <RootStack.Screen name="MyWishlists"           component={MyWishlistsScreen} />
+      <RootStack.Screen name="LikedIdeas"            component={LikedIdeasScreen} />
+      <RootStack.Screen
+        name="PlusMenu"
+        component={PlusMenuScreen}
+        options={{
+          presentation: 'transparentModal',
+          cardOverlayEnabled: false,
+          cardStyle: { backgroundColor: 'transparent' },
+        }}
+      />
     </RootStack.Navigator>
   );
 }

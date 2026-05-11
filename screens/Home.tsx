@@ -120,18 +120,18 @@ const styles = StyleSheet.create({
   header: {
     alignItems: 'center',
     paddingTop: 20,
-    paddingBottom: 10,
+    paddingBottom: 15,
   },
   logoImage: {
-    width: 130,
-    height: 44,
+    width: 120,
+    height: 30,
   },
   filterRow: {
     flexDirection: 'row',
     justifyContent: 'center',
     paddingHorizontal: 16,
     paddingBottom: 12,
-    gap: 25,
+    gap: 18,
   },
   filterTab: {
     paddingHorizontal: 0,
