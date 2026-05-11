@@ -24,16 +24,38 @@ import * as Clipboard from 'expo-clipboard';
 
 const { width, height } = Dimensions.get('window');
 
+export default function LikeButton({ postId }: { postId: number }) {
+  const [isLiked, setIsLiked] = useState(false);
+  const [likesCount, setLikesCount] = useState(0);
+
+  console.log(`Пост ${postId} теперь ${isLiked ? 'лайкнут' : 'не лайкнут'}`); // Вместо этого сделать отправку в бд
+
+  const handleLikePost = () => {
+    // Переключаем состояние
+    setIsLiked(!isLiked);
+    // Опционально меняем счетчик
+    setLikesCount(prev => isLiked ? prev - 1 : prev + 1);
+  };
+
+  return (
+    <TouchableOpacity style={styles.postLikeRow} onPress={handleLikePost}>
+      {/* Меняем source в зависимости от состояния isLiked */}
+      <Image 
+        source={isLiked ? require('../assets/like_button_on_icon.png') : require('../assets/like_button_off_icon.png')} 
+        style={styles.likeIcon} 
+      />
+      <Text style={styles.likesCount}>{likesCount}</Text>
+    </TouchableOpacity>
+  );
+}
+
+
 // --- ОТДЕЛЬНЫЙ КОМПОНЕНТ ПОСТА ---
 export function PostItem({ postId, onOpenMenu }: { 
   postId: number, 
   onOpenMenu: (pos: { top: number, right: number }, id: number) => void 
 }) {
   const ellipsisRef = React.useRef<View>(null);
-
-  const handleLikePost = () => {
-    Alert.alert('Лайк', `Лайк на пост: ${postId}`);
-  };
 
   const handleDotsPress = () => {
     if (ellipsisRef.current) {
@@ -73,10 +95,7 @@ export function PostItem({ postId, onOpenMenu }: {
         <Text style={styles.postDescription}>Очень хотелось бы получить на Новый год :)</Text>
         
         {/* КНОПКА ЛАЙКА КАК НА СКРИНЕ */}
-        <TouchableOpacity style={styles.postLikeRow} onPress={handleLikePost}>
-            <Ionicons name="heart-outline" size={26} color="#000" />
-            <Text style={styles.likesCount}>число</Text>
-        </TouchableOpacity>
+        <LikeButton postId={postId}/>
       </View>
   </View>
   );
@@ -183,6 +202,7 @@ export function ProfileScreen() {
         style={styles.scrollView} 
         showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.scrollContent}
+        bounces={false}
       >
         {/* Окно для фона */}
         <View style={styles.headerSpacer} />
@@ -547,4 +567,18 @@ const styles = StyleSheet.create({
     fontWeight: '500',
     color: '#000000',
   },
+  // postLikeRow: {
+  //   flexDirection: 'row',
+  //   alignItems: 'center',
+  //   gap: 8,
+  // },
+  likeIcon: {
+    width: 26,
+    height: 26,
+    resizeMode: 'contain', // Чтобы картинка не искажалась
+  },
+  // likesCount: {
+  //   fontSize: 16,
+  //   color: '#000',
+  // },
 });
