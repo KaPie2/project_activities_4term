@@ -1,63 +1,46 @@
-import React, { useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
+  Image,
   StyleSheet,
   TouchableOpacity,
-  Image,
   FlatList,
   ActivityIndicator,
   RefreshControl,
   SafeAreaView,
   StatusBar,
 } from 'react-native';
-import { useNavigation, CompositeNavigationProp } from '@react-navigation/native';
-import { StackNavigationProp } from '@react-navigation/stack';
-import { BottomTabNavigationProp } from '@react-navigation/bottom-tabs';
-import { RootStackParamList, MainTabParamList } from '../navigation/AppNavigator'; // вместо AppStackParamLIst -> MainTabParamList, потому что его не было в AppNavigator и я поменял
-import { useAuth } from '../hooks/useAuth';
 import { useFeed } from '../hooks/useFeed';
 import { FeedItemComponent } from '../components/FeedItem';
-import { Ionicons } from '@expo/vector-icons';
 
-//type MainScreenNavigationProp = StackNavigationProp<MainTabParamList, 'Home'>
-type NavigationProp = CompositeNavigationProp<
-  BottomTabNavigationProp<MainTabParamList, 'Home'>,
-  StackNavigationProp<RootStackParamList>
->;
+const FILTERS = [
+  { image: require('../assets/for_him.png') },
+  { image: require('../assets/for_her.png') },
+  { image: require('../assets/for_two.png') },
+];
 
-
-export function MainScreen(){
-  const navigation = useNavigation<NavigationProp>();
-  const { user } = useAuth();
+export function MainScreen() {
   const { item, loading, error, hasMore, refreshFeed, loadMore } = useFeed();
+  const [activeFilter, setActiveFilter] = useState(0);
 
   useEffect(() => {
     refreshFeed();
   }, []);
 
   const handleOpenWishlist = (wishlistId: string) => {
-    // todo, go to wishlist screen
     console.log('open wishlist', wishlistId);
-  }
-
-  const handleOpenOwnerWishlist = (ownerId: string) => {
-    // TODO: переход на вишлисты пользователя
-    console.log('Open owner wishlists', ownerId);
   };
 
-  const renderItem = ({ item }: {item: any}) => (
-    <FeedItemComponent
-      item={item}
-      onPressWishlist={handleOpenWishlist}
-    />
+  const renderItem = ({ item }: { item: any }) => (
+    <FeedItemComponent item={item} onPressWishlist={handleOpenWishlist} />
   );
 
   const renderFooter = () => {
     if (!hasMore) return null;
     return (
       <View style={styles.footer}>
-        <ActivityIndicator size="small" color="#B5D300" />
+        <ActivityIndicator size="small" color="#E8479B" />
       </View>
     );
   };
@@ -66,8 +49,9 @@ export function MainScreen(){
     if (loading) return null;
     return (
       <View style={styles.emptyContainer}>
-        <Ionicons name="gift-outline" size={80} color="#DDD" />
-        <Text style={styles.emptyText}>Пока нет подарков в ленте</Text>
+        <Image source={require('../assets/ghost.png')} style={styles.emptyImage} resizeMode="contain" />
+        <Text style={styles.emptyTitle}>Здесь пока ничего нет</Text>
+        <Text style={styles.emptySubtitle}>Подпишитесь на друзей или{'\n'}создайте свою первую идею</Text>
         <TouchableOpacity style={styles.refreshButton} onPress={refreshFeed}>
           <Text style={styles.refreshButtonText}>Обновить</Text>
         </TouchableOpacity>
@@ -77,26 +61,25 @@ export function MainScreen(){
 
   return (
     <SafeAreaView style={styles.container}>
-      <StatusBar barStyle="dark-content" backgroundColor="#fff" />
-      
-      {/* Шапка с иконкой пользователя */}
+      <StatusBar barStyle="dark-content" backgroundColor="#FCFAF7" />
+
       <View style={styles.header}>
-        <Text style={styles.headerTitle}>PickMe</Text>
-        <TouchableOpacity
-          style={styles.profileButton}
-          onPress={() => navigation.navigate('EditProfile')}
-        >
-          {user?.avatar_url ? (
-            <Image source={{ uri: user.avatar_url }} style={styles.avatar} />
-          ) : (
-            <View style={styles.avatarPlaceholder}>
-              <Ionicons name="person" size={24} color="#B5D300" />
-            </View>
-          )}
-        </TouchableOpacity>
+        <Image source={require('../assets/pick_me_home.png')} style={styles.logoImage} resizeMode="contain" />
       </View>
 
-      {/* Лента подарков */}
+      <View style={styles.filterRow}>
+        {FILTERS.map((f, i) => (
+          <TouchableOpacity
+            key={i}
+            style={[styles.filterTab, activeFilter === i && styles.filterTabActive]}
+            onPress={() => setActiveFilter(i)}
+            activeOpacity={0.7}
+          >
+            <Image source={f.image} style={styles.filterImage} resizeMode="contain" />
+          </TouchableOpacity>
+        ))}
+      </View>
+
       {error && !loading && (
         <View style={styles.errorContainer}>
           <Text style={styles.errorText}>{error}</Text>
@@ -114,8 +97,8 @@ export function MainScreen(){
           <RefreshControl
             refreshing={loading && item.length > 0}
             onRefresh={refreshFeed}
-            colors={['#B5D300']}
-            tintColor="#B5D300"
+            colors={['#E8479B']}
+            tintColor="#E8479B"
           />
         }
         onEndReached={loadMore}
@@ -132,60 +115,60 @@ export function MainScreen(){
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#fff',
+    backgroundColor: '#FCFAF7',
   },
   header: {
+    alignItems: 'center',
+    paddingTop: 20,
+    paddingBottom: 10,
+  },
+  logoImage: {
+    width: 130,
+    height: 44,
+  },
+  filterRow: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingHorizontal: 20,
-    paddingTop: 60,
-    paddingBottom: 15,
-    backgroundColor: '#fff',
-    borderBottomWidth: 1,
-    borderBottomColor: '#F0F0F0',
-  },
-  headerTitle: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: '#1A1A1A',
-  },
-  profileButton: {
-    padding: 5,
-  },
-  avatar: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-  },
-  avatarPlaceholder: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: '#F3F3F3',
     justifyContent: 'center',
+    paddingHorizontal: 16,
+    paddingBottom: 12,
+    gap: 25,
+  },
+  filterTab: {
+    paddingHorizontal: 0,
+    paddingVertical: 0,
+    borderRadius: 18,
+    borderWidth: 1.5,
+    borderColor: '#FFF',
+    backgroundColor: '#F2EBE2',
     alignItems: 'center',
-    borderWidth: 1,
-    borderColor: '#B5D300',
+    justifyContent: 'center',
+  },
+  filterTabActive: {
+    borderColor: '#FEACD6',
+    borderWidth: 3,    
+  },
+  filterImage: {
+    width: 97,
+    height: 69,
   },
   errorContainer: {
-    padding: 20,
+    padding: 16,
     alignItems: 'center',
     backgroundColor: '#FFF0F0',
     marginHorizontal: 16,
-    marginTop: 16,
+    marginBottom: 12,
     borderRadius: 12,
   },
   errorText: {
     fontSize: 14,
     color: '#FF3B30',
     textAlign: 'center',
-    marginBottom: 12,
+    marginBottom: 10,
   },
   retryButton: {
     paddingHorizontal: 20,
-    paddingVertical: 10,
-    backgroundColor: '#B5D300',
+    paddingVertical: 8,
+    backgroundColor: '#E8479B',
     borderRadius: 8,
   },
   retryButtonText: {
@@ -196,23 +179,40 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    paddingVertical: 60,
+    paddingVertical: 0,
+    paddingHorizontal: 32,
   },
-  emptyText: {
-    fontSize: 16,
-    color: '#888',
-    marginTop: 16,
-    marginBottom: 24,
+  emptyImage: {
+    width: 290,
+    height: 120,
+    marginBottom: 15,
+  },
+  emptyTitle: {
+    fontSize: 22,
+    fontWeight: '700',
+    color: '#8B8686',
+    textAlign: 'center',
+    marginBottom: 10,
+  },
+  emptySubtitle: {
+    fontSize: 15,
+    color: '#8B8686',
+    textAlign: 'center',
+    lineHeight: 22,
+    marginBottom: 20,
   },
   refreshButton: {
-    paddingHorizontal: 24,
-    paddingVertical: 12,
-    backgroundColor: '#B5D300',
-    borderRadius: 8,
+    paddingHorizontal: 48,
+    paddingVertical: 16,
+    backgroundColor: '#DBFB3E',
+    borderRadius: 18,
+    borderWidth: 1.5,
+    borderColor: '#8B8686',
   },
   refreshButtonText: {
-    color: '#fff',
-    fontWeight: '600',
+    color: '#8B8686',
+    fontWeight: '700',
+    fontSize: 16,
   },
   emptyListContent: {
     flexGrow: 1,
