@@ -21,6 +21,10 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { supabase } from '../services/supabase';
 import { BlurView } from 'expo-blur';
 import * as Clipboard from 'expo-clipboard';
+import { StackNavigationProp } from '@react-navigation/stack';
+import { RootStackParamList } from '../navigation/AppNavigator';
+
+type ProfileScreenNavigationProp = StackNavigationProp<RootStackParamList>;
 
 const { width, height } = Dimensions.get('window');
 
@@ -86,7 +90,7 @@ export function ProfileScreen() {
   const [isMenuVisible, setIsMenuVisible] = useState(false);
   const [menuPosition, setMenuPosition] = useState({ top: 0, right: 0 });
   const [selectedPostId, setSelectedPostId] = useState<number | null>(null); // Запоминаем ID поста
-  const navigation = useNavigation();
+  const navigation = useNavigation<ProfileScreenNavigationProp>();
   const { user } = useAuth();
   const ellipsisRef = useRef<View>(null);
   const [followersCount, setFollowersCount] = useState(0);
@@ -127,7 +131,9 @@ export function ProfileScreen() {
 
   const handleEditProfile = () => navigation.getParent()?.navigate('EditProfile');
   const handleMyBookings = () => Alert.alert('Мои брони', 'В разработке');
-  const handleMyWishlists = () => Alert.alert('Мои вишлисты', 'В разработке');
+  const handleMyWishlists = () => {
+  navigation.navigate('UserWishlists', { userId: user?.id });
+};
   const handleFavorites = () => Alert.alert('Избранное', 'В разработке');
 
   const handleOpenMenu = (position: { top: number; right: number }, postId: number) => {

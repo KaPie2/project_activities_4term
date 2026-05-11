@@ -14,6 +14,7 @@ import { useFocusEffect } from '@react-navigation/native';
 import { useNavigation, CompositeNavigationProp } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { CreateWishlistScreen } from '@/screens/CreateWishlist';
+import { UserWishlistsScreen } from '@/screens/UserWishlistsScreen';
 
 // Типы для Tab навигатора
 export type MainTabParamList = {
@@ -30,7 +31,8 @@ export type RootStackParamList = {
   MainTabs: undefined;
   EditProfile: undefined;
   OtherProfile: { userId: string };
-  CreateWishlist: undefined; // ← добавить
+  CreateWishlist: undefined;
+  UserWishlists: { userId?: string }; // ← добавить
 };
 
 const Tab = createBottomTabNavigator<MainTabParamList>();
@@ -195,6 +197,13 @@ export function AppNavigator() {
         options={{
         headerShown: false,
         
+        }}
+      />
+      <RootStack.Screen 
+        name="UserWishlists" 
+        component={UserWishlistsScreen}
+        options={{
+          headerShown: false,
         }}
       />
     </RootStack.Navigator>
