@@ -67,12 +67,13 @@ export function PlusMenuScreen() {
       </View>
 
       {/* розовая «рука-указатель» из Figma */}
-      <Image
-        source={require('../assets/pink-hand.png')}
-        style={styles.hand}
-        resizeMode="contain"
-        pointerEvents="none"
-      />
+      <View pointerEvents='none'>
+        <Image
+          source={require('../assets/pink-hand.png')}
+          style={styles.hand}
+          resizeMode="contain"
+        />
+      </View>
     </View>
   );
 }

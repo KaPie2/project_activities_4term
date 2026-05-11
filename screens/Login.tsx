@@ -66,7 +66,7 @@ export function LoginScreen() {
       {/* 1. ФОН: Картинка всегда на заднем плане */}
       <View style={styles.headerImageContainer}>
         <Image 
-          source={require('../assets/Leo.png')} 
+          source={require('../assets/leo.png')} 
           style={styles.spotsImage}
           resizeMode="cover"
         />

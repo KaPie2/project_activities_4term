@@ -183,6 +183,7 @@ export function ProfileScreen() {
         style={styles.scrollView} 
         showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.scrollContent}
+        bounces={false}
       >
         {/* Окно для фона */}
         <View style={styles.headerSpacer} />
