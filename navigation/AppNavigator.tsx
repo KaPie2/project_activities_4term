@@ -1,4 +1,4 @@
-import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
+import { createBottomTabNavigator, BottomTabNavigationProp } from '@react-navigation/bottom-tabs';
 import { createStackNavigator, TransitionPresets } from '@react-navigation/stack';
 import { View, Text, StyleSheet, TouchableOpacity, Platform } from 'react-native';
 import { useAuth } from '../contexts/AuthContext';
@@ -8,6 +8,12 @@ import { MainScreen } from '../screens/Home';
 import { ProfileScreen } from '../screens/Profile';
 import { OtherProfileScreen } from '../screens/OtherProfile';
 import { SearchScreen } from '../screens/Search';
+import { CreateModal } from '../components/CreateModal';
+import { useState, useCallback } from 'react';
+import { useFocusEffect } from '@react-navigation/native';
+import { useNavigation, CompositeNavigationProp } from '@react-navigation/native';
+import { StackNavigationProp } from '@react-navigation/stack';
+import { CreateWishlistScreen } from '@/screens/CreateWishlist';
 
 // Типы для Tab навигатора
 export type MainTabParamList = {
@@ -23,7 +29,8 @@ export type RootStackParamList = {
   Auth: undefined;
   MainTabs: undefined;
   EditProfile: undefined;
-  OtherProfile: { userId: string }; // ← добавить
+  OtherProfile: { userId: string };
+  CreateWishlist: undefined; // ← добавить
 };
 
 const Tab = createBottomTabNavigator<MainTabParamList>();
@@ -39,17 +46,48 @@ function NotificationsScreen() {
   );
 }
 
+type CreateScreenNavigationProp = CompositeNavigationProp<
+  BottomTabNavigationProp<MainTabParamList, 'Create'>,
+  StackNavigationProp<RootStackParamList>
+>;
+
 function CreateScreen() {
+  const navigation = useNavigation<CreateScreenNavigationProp>();
+  const [modalVisible, setModalVisible] = useState(false);
+
+  const handleCreateWishlist = () => {
+    setModalVisible(false);
+    navigation.navigate('CreateWishlist');
+  };
+
+  const handleCreateIdea = () => {
+    setModalVisible(false);
+    console.log('Navigate to CreateIdeaScreen');
+    // navigation.navigate('CreateIdea');
+  };
+
+  // Автоматически открываем модальное окно при фокусе на вкладке
+  useFocusEffect(
+    useCallback(() => {
+      setModalVisible(true);
+      return () => {
+        setModalVisible(false);
+      };
+    }, [])
+  );
+
   return (
     <View style={styles.screenContainer}>
-      <Ionicons name="add-circle-outline" size={60} color="#ccc" />
-      <Text style={styles.emptyText}>Создать вишлист или подарок</Text>
-      <TouchableOpacity style={styles.createButton}>
-        <Text style={styles.createButtonText}>Создать вишлист</Text>
-      </TouchableOpacity>
-      <TouchableOpacity style={[styles.createButton, styles.createGiftButton]}>
-        <Text style={styles.createButtonText}>Добавить подарок</Text>
-      </TouchableOpacity>
+      <CreateModal
+        visible={modalVisible}
+        onClose={() => {
+          setModalVisible(false);
+          // Возвращаемся на предыдущую вкладку при закрытии
+          navigation.goBack();
+        }}
+        onCreateWishlist={handleCreateWishlist}
+        onCreateIdea={handleCreateIdea}
+      />
     </View>
   );
 }
@@ -150,6 +188,14 @@ export function AppNavigator() {
       <RootStack.Screen 
         name="OtherProfile" 
         component={OtherProfileScreen}
+      />
+      <RootStack.Screen 
+        name="CreateWishlist" 
+        component={CreateWishlistScreen}
+        options={{
+        headerShown: false,
+        
+        }}
       />
     </RootStack.Navigator>
   );
