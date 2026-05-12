@@ -17,6 +17,8 @@ import {
 import { useAuth } from '../contexts/AuthContext';
 import { Ionicons, Feather } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
+import { StackNavigationProp } from '@react-navigation/stack';
+import { RootStackParamList } from '../navigation/AppNavigator';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { supabase } from '../services/supabase';
 import { BlurView } from 'expo-blur';
@@ -105,7 +107,7 @@ export function ProfileScreen() {
   const [isMenuVisible, setIsMenuVisible] = useState(false);
   const [menuPosition, setMenuPosition] = useState({ top: 0, right: 0 });
   const [selectedPostId, setSelectedPostId] = useState<number | null>(null); // Запоминаем ID поста
-  const navigation = useNavigation();
+  const navigation = useNavigation<StackNavigationProp<RootStackParamList>>();
   const { user } = useAuth();
   const ellipsisRef = useRef<View>(null);
   const [followersCount, setFollowersCount] = useState(0);
@@ -146,8 +148,8 @@ export function ProfileScreen() {
 
   const handleEditProfile = () => navigation.getParent()?.navigate('EditProfile');
   const handleMyBookings = () => Alert.alert('Мои брони', 'В разработке');
-  const handleMyWishlists = () => Alert.alert('Мои вишлисты', 'В разработке');
-  const handleFavorites = () => Alert.alert('Избранное', 'В разработке');
+  const handleMyWishlists = () => navigation.navigate('MyWishlists');
+  const handleFavorites = () => navigation.navigate('LikedIdeas');
 
   const handleOpenMenu = (position: { top: number; right: number }, postId: number) => {
     setMenuPosition(position);
