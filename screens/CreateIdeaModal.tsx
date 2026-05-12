@@ -37,6 +37,8 @@ export function CreateIdeaModalScreen() {
   const [folderPickerOpen, setFolderPickerOpen] = useState(false);
 
   useEffect(() => {
+    console.log('[CreateIdeaModal] Mounted, params:', route.params);
+    console.log('[CreateIdeaModal] wishlistId from params:', route.params?.wishlistId);
     if (user?.id) fetchWishlists(user.id);
   }, [user?.id, fetchWishlists]);
 
@@ -80,7 +82,7 @@ export function CreateIdeaModalScreen() {
 
       <View style={styles.center} pointerEvents="box-none">
         <View style={styles.card}>
-          <ScrollView keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false} scrollEnabled={false}>
+          <ScrollView keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false} scrollEnabled={true}>
             <View style={styles.titleRow}>
               <Image
                 source={require('../assets/create_idea_icon.png')}

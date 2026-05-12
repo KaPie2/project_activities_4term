@@ -53,9 +53,9 @@ export default function LikeButton({ postId }: { postId: number }) {
 
 
 // --- ОТДЕЛЬНЫЙ КОМПОНЕНТ ПОСТА ---
-export function PostItem({ postId, onOpenMenu }: { 
-  postId: number, 
-  onOpenMenu: (pos: { top: number, right: number }, id: number) => void 
+export function PostItem({ post, onOpenMenu }: { 
+  post: any, 
+  onOpenMenu: (pos: { top: number, right: number }, id: string) => void 
 }) {
   const ellipsisRef = React.useRef<View>(null);
 
@@ -66,7 +66,7 @@ export function PostItem({ postId, onOpenMenu }: {
         onOpenMenu({
           top: py + h + 2,
           right: (Dimensions.get('window').width - px) - w + 5
-        }, postId);
+        }, post.id);
       });
     }
   };
@@ -76,10 +76,10 @@ export function PostItem({ postId, onOpenMenu }: {
       <View style={styles.feedHeader}>
         <Image source={require('../assets/default-avatar.png')} style={styles.miniAvatar} />
         <View>
-          <Text style={styles.feedName}>Имя Фамилия</Text>
+          <Text style={styles.feedName}>{post.user?.name || 'Пользователь'}</Text>
           <View style={styles.folderRow}>
             <Feather name="arrow-right" size={14} color="#E8479B" />
-            <Text style={styles.folderName}>Имя папки</Text>
+            <Text style={styles.folderName}>{post.wishlists?.title || 'Без папки'}</Text>
           </View>
         </View>
         <TouchableOpacity ref={ellipsisRef} onPress={handleDotsPress} style={{ marginLeft: 'auto', padding: 5 }}>
@@ -88,16 +88,20 @@ export function PostItem({ postId, onOpenMenu }: {
       </View>
       
       <View style={styles.imagePlaceholder}>
+        {post.image_url ? (
+        <Image source={{ uri: post.image_url }} style={{ width: '100%', height: '100%', borderRadius: 15 }} />
+        ) : (
         <Ionicons name="image-outline" size={70} color="#666" />
+        )}
       </View>
       
       <View style={styles.postInfo}>
-        <Text style={styles.postText}><Text style={styles.bold}>Название:</Text> кофемашина</Text>
-        <Text style={styles.postText}><Text style={styles.bold}>Ссылка:</Text> meowmeowmeow.ru</Text>
-        <Text style={styles.postDescription}>Очень хотелось бы получить на Новый год :)</Text>
+        <Text style={styles.postText}><Text style={styles.bold}>Название:</Text> {post.title}</Text>
+        <Text style={styles.postText}><Text style={styles.bold}>Ссылка:</Text> {post.product_url || 'Ссылка не указана'}</Text>
+        <Text style={styles.postDescription}>{post.description || 'Без описания'}</Text>
         
         {/* КНОПКА ЛАЙКА КАК НА СКРИНЕ */}
-        <LikeButton postId={postId}/>
+        <LikeButton postId={post.id}/>
       </View>
   </View>
   );
@@ -106,13 +110,16 @@ export function PostItem({ postId, onOpenMenu }: {
 export function ProfileScreen() {
   const [isMenuVisible, setIsMenuVisible] = useState(false);
   const [menuPosition, setMenuPosition] = useState({ top: 0, right: 0 });
-  const [selectedPostId, setSelectedPostId] = useState<number | null>(null); // Запоминаем ID поста
+  const [selectedPostId, setSelectedPostId] = useState<string | null>(null); // Запоминаем ID поста
   const navigation = useNavigation<StackNavigationProp<RootStackParamList>>();
   const { user } = useAuth();
   const ellipsisRef = useRef<View>(null);
   const [followersCount, setFollowersCount] = useState(0);
   const [followingCount, setFollowingCount] = useState(0);
   const [wishlistsCount, setWishlistsCount] = useState(0);
+  const [posts, setPosts] = useState<any[]>([]);
+  const [loadingPosts, setLoadingPosts] = useState(false);
+  
 
   const fetchCounts = async () => {
     try {
@@ -140,9 +147,47 @@ export function ProfileScreen() {
     }
   };
 
+  const fetchUserPosts = async () => {
+    if (!user?.id) return;
+    setLoadingPosts(true);
+    try {
+    // Получаем вишлисты пользователя
+      const { data: wishlists, error: wishlistError } = await supabase
+        .from('wishlists')
+        .select('id')
+        .eq('user_id', user.id);
+    
+      if (wishlistError) throw wishlistError;
+    
+      const wishlistIds = wishlists.map(w => w.id);
+    
+      if (wishlistIds.length === 0) {
+        setPosts([]);
+        return;
+      }
+    
+    // Получаем items (идеи) из этих вишлистов
+      const { data: items, error: itemsError } = await supabase
+        .from('items')
+        .select('*, wishlists(title)')
+        .in('wishlist_id', wishlistIds)
+        .order('created_at', { ascending: false });
+    
+      if (itemsError) throw itemsError;
+    
+      setPosts(items || []);
+    } catch (error) {
+      console.error('Ошибка загрузки постов:', error);
+    } finally {
+      setLoadingPosts(false);
+    }
+};
+
+
   useEffect(() => {
     if (user?.id) {
       fetchCounts();
+      fetchUserPosts();
     }
   }, [user]);
 
@@ -151,7 +196,7 @@ export function ProfileScreen() {
   const handleMyWishlists = () => navigation.navigate('MyWishlists');
   const handleFavorites = () => navigation.navigate('LikedIdeas');
 
-  const handleOpenMenu = (position: { top: number; right: number }, postId: number) => {
+  const handleOpenMenu = (position: { top: number; right: number }, postId: string) => {
     setMenuPosition(position);
     setSelectedPostId(postId);
     setIsMenuVisible(true);
@@ -261,16 +306,23 @@ export function ProfileScreen() {
 
           {/* ЛЕНТА ПОСТОВ тут короче заглушка, реализуйте так, чтобы посты из бд подтягивались */}
           <View style={{ marginTop: 5, paddingBottom: 0 }}>
-            {/* Для проверки выведем 3 поста. У каждого свой ID */}
-            <PostItem postId={1} onOpenMenu={handleOpenMenu} />
-            <PostItem postId={2} onOpenMenu={handleOpenMenu} />
-            <PostItem postId={3} onOpenMenu={handleOpenMenu} />
-            
-            {/* В будущем, когда подключишь базу данных (Supabase), это будет выглядеть так:
-              postsData.map((post) => (
-                <PostItem key={post.id} postId={post.id} onOpenMenu={handleOpenMenu} />
+            {loadingPosts ? (
+              <Text style={{ textAlign: 'center', padding: 20, color: '#666' }}>
+                Загрузка постов...
+              </Text>
+            ) : posts.length > 0 ? (
+            posts.map((post) => (
+            <PostItem 
+              key={post.id} 
+              post={post} 
+              onOpenMenu={handleOpenMenu} 
+              />
               ))
-            */}
+            ) : (
+              <Text style={{ textAlign: 'center', padding: 20, color: '#666' }}>
+                У вас пока нет идей
+              </Text>
+            )}
           </View>
         </View>
 

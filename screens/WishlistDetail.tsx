@@ -55,8 +55,14 @@ export function WishlistDetailScreen() {
   }, [fetchItems]);
 
   const handleAddIdea = () => {
-    navigation.navigate('CreateIdeaModal', { wishlistId });
-  };
+  console.log('[WishlistDetail] handleAddIdea called, wishlistId:', wishlistId);
+  try {
+    const result = navigation.navigate('CreateIdeaModal', { wishlistId });
+    console.log('[WishlistDetail] navigate result:', result);
+  } catch (error) {
+    console.error('[WishlistDetail] navigate error:', error);
+  }
+};
 
   const renderItem = ({ item }: { item: Item }) => (
     <View style={styles.post}>
