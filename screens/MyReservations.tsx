@@ -9,6 +9,8 @@ import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import { Item } from '../models/item';
 import { User } from '../models/user';
+import { SafeAreaView } from 'react-native-safe-area-context'
+
 
 const { width } = Dimensions.get('window');
 
@@ -160,7 +162,7 @@ export default function MyReservationsScreen() {
   );
 
   return (
-    <View style={styles.container}>
+    <SafeAreaView style={styles.container}>
       {/* Шапка экрана */}
       <View style={styles.screenHeader}>
         <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
@@ -196,7 +198,7 @@ export default function MyReservationsScreen() {
           ))
         )}
       </ScrollView>
-    </View>
+    </SafeAreaView>
   );
 }
 
@@ -204,11 +206,11 @@ const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#F8F8F8' },
   screenHeader: {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
-    paddingHorizontal: 16, paddingVertical: 12, backgroundColor: '#FFFFFF',
+    paddingHorizontal: 16, paddingVertical: 10,
     borderBottomWidth: 1, borderBottomColor: '#E0E0E0',
   },
   backButton: { padding: 4 },
-  screenHeaderTitle: { fontSize: 18, fontWeight: '600', color: '#1A1A1A' },
+  screenHeaderTitle: { fontSize: 18, fontWeight: '700', color: '#1A1A1A' },
   headerRight: { width: 32 },
   scrollView: { flex: 1 },
   errorContainer: { padding: 16, margin: 16, backgroundColor: '#FFEBEE', borderRadius: 8 },

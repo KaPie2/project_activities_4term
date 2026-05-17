@@ -82,7 +82,7 @@ export function CreateIdeaModalScreen() {
 
       <View style={styles.center} pointerEvents="box-none">
         <View style={styles.card}>
-          <ScrollView keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false} scrollEnabled={true}>
+          <ScrollView keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false} scrollEnabled={false}>
             <View style={styles.titleRow}>
               <Image
                 source={require('../assets/create_idea_icon.png')}
@@ -160,16 +160,18 @@ export function CreateIdeaModalScreen() {
                 {wishlists.length === 0 ? (
                   <Text style={styles.dropdownEmpty}>Сначала создайте вишлист</Text>
                 ) : (
-                  wishlists.map(w => (
-                    <TouchableOpacity
-                      key={w.id}
-                      style={styles.dropdownRow}
-                      onPress={() => { setFolder(w.id); setFolderPickerOpen(false); }}
-                    >
-                      <Text style={styles.dropdownText}>{w.title}</Text>
-                      {folder === w.id && <Ionicons name="checkmark" size={18} color="#1F1F1F" />}
-                    </TouchableOpacity>
-                  ))
+                  <ScrollView nestedScrollEnabled showsVerticalScrollIndicator={false} style={styles.dropdownScroll}>
+                    {wishlists.map(w => (
+                      <TouchableOpacity
+                        key={w.id}
+                        style={styles.dropdownRow}
+                        onPress={() => { setFolder(w.id); setFolderPickerOpen(false); }}
+                      >
+                        <Text style={styles.dropdownText}>{w.title}</Text>
+                        {folder === w.id && <Ionicons name="checkmark" size={18} color="#1F1F1F" />}
+                      </TouchableOpacity>
+                    ))}
+                  </ScrollView>
                 )}
               </View>
             )}
@@ -285,7 +287,7 @@ const styles = StyleSheet.create({
     borderRadius: 14,
     borderWidth: 1,
     borderColor: '#E0E0E0',
-    overflow: 'hidden',
+    //overflow: 'hidden',
   },
   dropdownEmpty: { padding: 14, color: '#797979', fontSize: 14 },
   dropdownRow: {
@@ -307,9 +309,10 @@ const styles = StyleSheet.create({
     alignSelf: 'center',
     paddingHorizontal: 45,
     marginTop: 20,
-    marginBottom: 0,
+    marginBottom: 3,
   },
   submitText: { color: '#FFFFFF', fontWeight: '700', fontSize: 16, letterSpacing: 1 },
   disabled: { opacity: 0.5 },
   titleIcon: { width: 25, height: 25 },
+  dropdownScroll: { maxHeight: 200 },
 });

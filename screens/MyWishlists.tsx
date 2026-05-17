@@ -58,10 +58,11 @@ export function MyWishlistsScreen() {
           {item.title}
         </Text>
         <View style={styles.metaRow}>
-          <View style={styles.pin}>
-            <Ionicons name="pricetag" size={11} color="#fff" />
-            <Text style={styles.pinText}>{item.totalItems} идей</Text>
-          </View>
+          <Image 
+            source={require('../assets/idea_pin_icon.png')}
+            style={styles.pinImage} 
+          />
+          <Text style={styles.pinText}>{item.totalItems} идей</Text>
           <View style={styles.dot} />
           <View style={styles.author}>
             <Image
@@ -85,7 +86,7 @@ export function MyWishlistsScreen() {
           /* TODO: меню вишлиста */
         }}
       >
-        <Ionicons name="ellipsis-vertical" size={20} color="#1F1F1F" />
+        <Ionicons name="ellipsis-vertical" size={30} color="#1F1F1F" />
       </TouchableOpacity>
     </TouchableOpacity>
   );
@@ -112,8 +113,11 @@ export function MyWishlistsScreen() {
       {/* Top bar */}
       <View style={styles.topbar}>
         <TouchableOpacity style={styles.back} onPress={() => navigation.goBack()}>
-          <Ionicons name="chevron-back" size={22} color="#1F1F1F" />
-          <Text style={styles.backText}>Назад</Text>
+          <Image 
+            source={require('../assets/back_icon.png')}
+            style={styles.backArrowImage}
+            resizeMode="contain"
+          />
         </TouchableOpacity>
         <Text style={styles.title}>Мои вишлисты</Text>
         <View style={styles.spacer} />
@@ -171,7 +175,7 @@ const styles = StyleSheet.create({
   back: { flexDirection: 'row', alignItems: 'center', width: 70 },
   backText: { fontSize: 15, color: '#1F1F1F', marginLeft: 2 },
   title: { fontSize: 18, fontWeight: '700', color: '#1F1F1F' },
-  divider: { height: 1, backgroundColor: '#EDE6DC' },
+  divider: { height: 1, backgroundColor: '#BABABA', marginHorizontal: 25 },
 
   list: { paddingHorizontal: 12, paddingTop: 14, paddingBottom: 240 },
   listEmpty: { flexGrow: 1, paddingHorizontal: 12, paddingTop: 14 },
@@ -180,43 +184,36 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: '#FFFFFF',
-    borderRadius: 25,
-    borderWidth: 1,
-    borderColor: '#EDE6DC',
-    paddingHorizontal: 12,
-    paddingVertical: 10,
-    marginBottom: 10,
+    borderRadius: 32,
+    borderWidth: 2.5,
+    borderColor: '#F2EBE2',
+    paddingHorizontal: 15,
+    paddingVertical: 18,
+    marginTop: 10,
+    marginBottom: 15,
     minHeight: 80,
+    marginHorizontal: 10,
   },
   thumb: {
-    width: 56,
-    height: 56,
-    borderRadius: 16,
-    backgroundColor: '#F3EEE5',
+    width: 62,
+    height: 62,
+    borderRadius: 999,
+    backgroundColor: '#E5E5E5',
     alignItems: 'center',
     justifyContent: 'center',
     overflow: 'hidden',
   },
   thumbImg: { width: '100%', height: '100%' },
-  rowText: { flex: 1, marginLeft: 12, marginRight: 6 },
-  rowTitle: { fontSize: 16, fontWeight: '700', color: '#1F1F1F' },
-  metaRow: { flexDirection: 'row', alignItems: 'center', marginTop: 4 },
-  pin: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#E8479B',
-    paddingHorizontal: 8,
-    paddingVertical: 3,
-    borderRadius: 999,
-    gap: 4,
-  },
-  pinText: { color: '#fff', fontSize: 11, fontWeight: '600' },
+  rowText: { flex: 1, marginLeft: 15, marginRight: 6 },
+  rowTitle: { fontSize: 19, fontWeight: '600', color: '#1F1F1F' },
+  metaRow: { flexDirection: 'row', alignItems: 'center', marginTop: 12 },
+  pinText: { color: '#1F1F1F', fontSize: 12, fontWeight: '600' },
   dot: {
-    width: 3,
-    height: 3,
+    width: 4,
+    height: 4,
     borderRadius: 2,
-    backgroundColor: '#BDB6AB',
-    marginHorizontal: 8,
+    backgroundColor: '#1F1F1F',
+    marginHorizontal: 10,
   },
   author: { flexDirection: 'row', alignItems: 'center', flexShrink: 1 },
   miniAva: { width: 18, height: 18, borderRadius: 9, marginRight: 6 },
@@ -232,8 +229,8 @@ const styles = StyleSheet.create({
     position: 'absolute',
     left: 9,
     right: 9,
-    bottom: 0,
-    height: 200,
+    bottom: -70,
+    height: 450,
   },
   fish: {
     width: '100%',
@@ -258,4 +255,15 @@ const styles = StyleSheet.create({
   },
   retryText: { color: '#fff', fontWeight: '600' },
   spacer: { width: 70 },
+  pinImage: {
+    width: 14,   
+    height: 14,  
+    marginRight: 5, 
+    resizeMode: 'contain', // Сохраняет пропорции картинки
+  },
+  backArrowImage: {
+    width: 35, 
+    height: 30,
+    marginLeft: 10 
+  },
 });

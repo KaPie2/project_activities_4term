@@ -69,7 +69,7 @@ export function PlusMenuScreen() {
         </TouchableOpacity>
       </View>
 
-      {/* розовая «рука-указатель» из Figma */}
+      {/* пикми палочка дабалью дабалью */}
       <View pointerEvents="none" style={styles.hand}>
         <Image
           source={require('../assets/pink-hand.png')}
@@ -119,9 +119,9 @@ const styles = StyleSheet.create({
 
   hand: {
     position: 'absolute',
-    right: -30,
-    bottom: Platform.OS === 'ios' ? -10 : -40,
-    width: 300,
-    height: 400,
+    right: 5,
+    bottom: Platform.OS === 'ios' ? 85 : 55,
+    width: 200,
+    height: 300,
   },
 });

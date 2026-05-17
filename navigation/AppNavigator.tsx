@@ -192,7 +192,7 @@ export function AppNavigator() {
         name="CreateIdeaModal"
         component={CreateIdeaModalScreen}
         options={{
-          presentation: 'modal',
+          presentation: 'transparentModal',
           cardOverlayEnabled: false,
           cardStyle: { backgroundColor: 'transparent' },
         }}

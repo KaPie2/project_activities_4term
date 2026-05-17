@@ -301,11 +301,6 @@ export function ProfileScreen() {
             <Text style={styles.statNumber}>{followersCount}</Text>
             <Text style={styles.statLabel}>Подписчики</Text>
           </View>
-          <View style={styles.statDivider} />
-          <View style={styles.statItem}>
-            <Text style={styles.statNumber}>{reservationsCount}</Text>
-            <Text style={styles.statLabel}>Бронирования</Text>
-          </View>
         </View>
 
           {/* Кнопки действий */}
