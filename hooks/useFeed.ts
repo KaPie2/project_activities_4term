@@ -92,7 +92,22 @@ export function useFeed(){
         return { success: true, items: [] };
       }
 
-      // 3. Получаем посты только от пользователей, на которых подписан
+      // 3. Получаем wishlist_id вишлистов от подписок
+      const { data: wishlistsData, error: wishlistsError } = await supabase
+        .from('wishlists')
+        .select('id')
+        .in('user_id', followingIds);
+
+      if (wishlistsError) throw new Error(wishlistsError.message);
+
+      const wishlistIds = wishlistsData?.map(w => w.id) || [];
+      if (wishlistIds.length === 0) {
+        setItem([]);
+        setHasMore(false);
+        return { success: true, items: [] };
+      }
+
+      // 4. Получаем посты только из вишлистов подписок
       const { data, error: fetchError } = await supabase
         .from('items')
         .select(`
@@ -108,7 +123,7 @@ export function useFeed(){
             )
           )
         `)
-        .in('wishlists.user_id', followingIds) // Ключевой фильтр
+        .in('wishlist_id', wishlistIds)
         .order('created_at', { ascending: false })
         .range(from, to);
 

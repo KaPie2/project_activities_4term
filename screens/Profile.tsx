@@ -16,7 +16,8 @@ import {
 } from 'react-native';
 import { useAuth } from '../contexts/AuthContext';
 import { Ionicons, Feather } from '@expo/vector-icons';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useFocusEffect } from '@react-navigation/native';
+import { useCallback } from 'react';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { RootStackParamList } from '../navigation/AppNavigator';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -209,6 +210,16 @@ export function ProfileScreen() {
       fetchReservationsCount();
     }
   }, [user]);
+
+  useFocusEffect(
+    useCallback(() => {
+      if (user?.id) {
+        fetchCounts();
+        fetchUserPosts();
+        fetchReservationsCount();
+      }
+    }, [user?.id])
+  );
 
   const handleEditProfile = () => navigation.getParent()?.navigate('EditProfile');
   const handleMyBookings = () => navigation.navigate('MyReservations');

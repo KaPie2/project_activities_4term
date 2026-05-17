@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import { View, Text, Image, TouchableOpacity, StyleSheet, Linking, Alert } from "react-native";
+import { Feather } from "@expo/vector-icons";
 import { FeedItem } from "@/hooks/useFeed";
 import { useReservations } from "@/hooks/useReservations";
 import { useAuth } from "@/contexts/AuthContext";
@@ -15,7 +16,6 @@ export function FeedItemComponent({ item, onPressWishlist, onReservationSuccess 
     const [likesCount, setLikesCount] = useState(0);
     const { createReservation, loading: reservationLoading } = useReservations();
     const { user } = useAuth();
-    const isReserved = item.status === 'reserved';
 
     const handleOpenProduct = () => {
         if (item.productUrl) {
@@ -88,7 +88,7 @@ export function FeedItemComponent({ item, onPressWishlist, onReservationSuccess 
                         <Text style={styles.ownerName}>{item.ownerName || item.ownerLogin}</Text>
                         <TouchableOpacity onPress={handleOpenWishlist} style={styles.folderRow}>
                             {/* forward_icon.png — стрелка вправо, розовая */}
-                            <Image source={require('../assets/forward_icon.png')} style={styles.arrowIcon} />
+                            <Feather name="arrow-right" size={14} color="#E8479B" />
                             <Text style={styles.folderName}>{item.wishlistTitle || 'Вишлист'}</Text>
                         </TouchableOpacity>
                     </View>

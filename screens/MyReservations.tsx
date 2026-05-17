@@ -39,8 +39,8 @@ export default function MyReservationsScreen() {
       `Отменить бронирование "${itemTitle}"?`,
       [
         { text: 'Нет', style: 'cancel' },
-        { 
-          text: 'Да, отменить', 
+        {
+          text: 'Да, отменить',
           style: 'destructive',
           onPress: async () => {
             const result = await cancelReservation(reservationId, itemId);
@@ -87,7 +87,7 @@ export default function MyReservationsScreen() {
   const item = reservation.item;
   const owner = reservation.owner;
   const wishlist = reservation.wishlist;
-  
+
   if (!item) {
     return (
       <View style={styles.reservationCard}>
@@ -113,7 +113,7 @@ export default function MyReservationsScreen() {
             </View>
           </View>
         </View>
-        
+
         <View style={[styles.statusBadge, { backgroundColor: getStatusColor(reservation.status) }]}>
           <Text style={styles.statusBadgeText}>{getStatusText(reservation.status)}</Text>
         </View>
@@ -131,7 +131,7 @@ export default function MyReservationsScreen() {
       {/* Информация */}
       <View style={styles.content}>
         <Text style={styles.itemTitle}>{item.title}</Text>
-        
+
         {item.price && <Text style={styles.price}>{item.formattedPrice}</Text>}
 
         {item.description && (
@@ -206,11 +206,11 @@ const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#F8F8F8' },
   screenHeader: {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
-    paddingHorizontal: 16, paddingVertical: 10,
+    paddingHorizontal: 16, paddingVertical: 12,
     borderBottomWidth: 1, borderBottomColor: '#E0E0E0',
   },
   backButton: { padding: 4 },
-  screenHeaderTitle: { fontSize: 18, fontWeight: '700', color: '#1A1A1A' },
+  screenHeaderTitle: { fontSize: 18, fontWeight: '600', color: '#1A1A1A' },
   headerRight: { width: 32 },
   scrollView: { flex: 1 },
   errorContainer: { padding: 16, margin: 16, backgroundColor: '#FFEBEE', borderRadius: 8 },
