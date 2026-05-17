@@ -11,6 +11,7 @@ import {
   SafeAreaView,
   StatusBar,
 } from 'react-native';
+import { useIsFocused } from '@react-navigation/native';
 import { useFeed } from '../hooks/useFeed';
 import { FeedItemComponent } from '../components/FeedItem';
 
@@ -23,17 +24,18 @@ const FILTERS = [
 export function MainScreen() {
   const { item, loading, error, hasMore, refreshFeed, loadMore } = useFeed();
   const [activeFilter, setActiveFilter] = useState(0);
+  const isFocused = useIsFocused();
 
   useEffect(() => {
-    refreshFeed();
-  }, []);
+    if (isFocused) refreshFeed();
+  }, [isFocused]);
 
   const handleOpenWishlist = (wishlistId: string) => {
     console.log('open wishlist', wishlistId);
   };
 
   const renderItem = ({ item }: { item: any }) => (
-    <FeedItemComponent item={item} onPressWishlist={handleOpenWishlist} />
+    <FeedItemComponent item={item} onPressWishlist={handleOpenWishlist} onReservationSuccess={refreshFeed} />
   );
 
   const renderFooter = () => {

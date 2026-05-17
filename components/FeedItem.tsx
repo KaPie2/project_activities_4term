@@ -1,6 +1,6 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { View, Text, Image, TouchableOpacity, StyleSheet, Linking, Alert } from "react-native";
-import { Feather } from "@expo/vector-icons";
+import { Feather, Ionicons } from "@expo/vector-icons";
 import { FeedItem } from "@/hooks/useFeed";
 import { useReservations } from "@/hooks/useReservations";
 import { useAuth } from "@/contexts/AuthContext";
@@ -14,6 +14,11 @@ interface FeedItemProps {
 export function FeedItemComponent({ item, onPressWishlist, onReservationSuccess }: FeedItemProps) {
     const [isLiked, setIsLiked] = useState(false);
     const [likesCount, setLikesCount] = useState(0);
+    const [isBooked, setIsBooked] = useState(!item.isAvailable);
+
+    useEffect(() => {
+        setIsBooked(!item.isAvailable);
+    }, [item.isAvailable]);
     const { createReservation, loading: reservationLoading } = useReservations();
     const { user } = useAuth();
 
@@ -47,7 +52,7 @@ export function FeedItemComponent({ item, onPressWishlist, onReservationSuccess 
             return;
         }
 
-        if (!item.isAvailable) {
+        if (isBooked) {
             Alert.alert('Ошибка', 'Этот товар уже забронирован');
             return;
         }
@@ -63,6 +68,7 @@ export function FeedItemComponent({ item, onPressWishlist, onReservationSuccess 
                     onPress: async () => {
                         const result = await createReservation(item.id);
                         if (result.success) {
+                            setIsBooked(true);
                             Alert.alert('Успех', 'Товар успешно забронирован!');
                             onReservationSuccess?.();
                         } else {
@@ -93,21 +99,21 @@ export function FeedItemComponent({ item, onPressWishlist, onReservationSuccess 
                         </TouchableOpacity>
                     </View>
                 </View>
-                <TouchableOpacity 
+                <TouchableOpacity
                     style={[
-                        styles.bookButton, 
-                        !item.isAvailable && styles.bookButtonDisabled,
+                        styles.bookButton,
+                        isBooked && styles.bookButtonDisabled,
                         reservationLoading && styles.bookButtonLoading
-                    ]} 
+                    ]}
                     activeOpacity={0.8}
                     onPress={handleBook}
-                    disabled={!item.isAvailable || reservationLoading || item.ownerId === user?.id}
+                    disabled={isBooked || reservationLoading || item.ownerId === user?.id}
                 >
                     <Text style={[
                         styles.bookButtonText,
-                        !item.isAvailable && styles.bookButtonTextDisabled
+                        isBooked && styles.bookButtonTextDisabled
                     ]}>
-                        {!item.isAvailable ? 'Забронировано' : 'Забронировать'}
+                        {isBooked ? 'Забронировано' : 'Забронировать'}
                     </Text>
                 </TouchableOpacity>
             </View>
@@ -115,16 +121,16 @@ export function FeedItemComponent({ item, onPressWishlist, onReservationSuccess 
             {/* Фото товара */}
             {/* фото товара: uri из БД или gifts.png как плейсхолдер */}
             <View style={styles.imageContainer}>
-                <Image
-                    source={item.imageUrl ? { uri: item.imageUrl } : require('../assets/gifts.png')}
-                    style={styles.image}
-                    resizeMode={item.imageUrl ? 'cover' : 'contain'}
-                />
-                {!item.isAvailable && (
+                {item.imageUrl ? (
+                    <Image source={{ uri: item.imageUrl }} style={styles.image} resizeMode="cover" />
+                ) : (
+                    <Ionicons name="image-outline" size={70} color="#666" />
+                )}
+                {/* {!item.isAvailable && (
                     <View style={styles.reservedBadge}>
                         <Text style={styles.reservedBadgeText}>ЗАБРОНИРОВАНО</Text>
                     </View>
-                )}
+                )} */}
             </View>
 
             {/* Информация о товаре */}
@@ -247,6 +253,8 @@ const styles = StyleSheet.create({
         borderRadius: 16,
         overflow: 'hidden',
         position: 'relative',
+        justifyContent: 'center',
+        alignItems: 'center',
     },
     image: {
         width: '100%',
