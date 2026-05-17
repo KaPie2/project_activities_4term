@@ -1,6 +1,7 @@
 import { useState, useCallback } from 'react';
 import { Item, ItemStatus } from '../models';
 import { supabase } from '../services/supabase';
+import { useAuth } from '../contexts/AuthContext';
 
 
 export interface FeedItem extends Item {
@@ -20,6 +21,7 @@ export function useFeed(){
     const [error, setError] = useState<string | null>(null);
     const [page, setPage] = useState(0);
     const [hasMore, setHasMore] = useState(true);
+    const { user } = useAuth();
 
     const mapToFeedItem = (data: any): FeedItem => {
         const item = new Item(data.id, {
@@ -61,24 +63,52 @@ export function useFeed(){
     setError(null);
 
     try {
+      // Проверяем авторизацию пользователя
+      if (!user) {
+        setItem([]);
+        setHasMore(false);
+        return { success: false, error: 'Пользователь не авторизован' };
+      }
+
       const from = pageNum * ITEMS_PER_PAGE;
       const to = from + ITEMS_PER_PAGE - 1;
 
+      // 1. Получаем список пользователей, на которых подписан текущий пользователь
+      const { data: followingData, error: followingError } = await supabase
+        .from('friendships')
+        .select('friend_id')
+        .eq('user_id', user.id)
+        .eq('status', 'accepted');
+
+      if (followingError) {
+        throw new Error(followingError.message);
+      }
+
+      // 2. Если пользователь ни на кого не подписан - возвращаем пустую ленту
+      const followingIds = followingData?.map(f => f.friend_id) || [];
+      if (followingIds.length === 0) {
+        setItem([]);
+        setHasMore(false);
+        return { success: true, items: [] };
+      }
+
+      // 3. Получаем посты только от пользователей, на которых подписан
       const { data, error: fetchError } = await supabase
         .from('items')
         .select(`
-            *,
-            wishlists: wishlist_id (
+          *,
+          wishlists: wishlist_id (
             id,
             title,
             user_id,
             users: user_id (
-                login,
-                name,
-                avatar_url
+              login,
+              name,
+              avatar_url
             )
-            )
+          )
         `)
+        .in('wishlists.user_id', followingIds) // Ключевой фильтр
         .order('created_at', { ascending: false })
         .range(from, to);
 
@@ -115,7 +145,7 @@ export function useFeed(){
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [user]);
 
   const loadMore = useCallback(async () => {
     if (!hasMore || loading) return {success: false, error: "no data"};

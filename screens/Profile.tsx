@@ -244,6 +244,8 @@ export function ProfileScreen() {
     }
   };
 
+  
+
   return (
     <View style={styles.mainContainer}>
       <StatusBar barStyle="dark-content" translucent backgroundColor="transparent" />
