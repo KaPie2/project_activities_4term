@@ -123,8 +123,11 @@ export function WishlistDetailScreen() {
 
       <View style={styles.topbar}>
         <TouchableOpacity style={styles.back} onPress={() => navigation.goBack()}>
-          <Ionicons name="chevron-back" size={22} color="#1F1F1F" />
-          <Text style={styles.backText}>Назад</Text>
+          <Image 
+            source={require('../assets/back_icon.png')}
+            style={styles.backArrowImage}
+            resizeMode="contain"
+          />
         </TouchableOpacity>
         <Text style={styles.title} numberOfLines={1}>
           {title}
@@ -139,8 +142,7 @@ export function WishlistDetailScreen() {
         renderItem={renderItem}
         ListHeaderComponent={
           <TouchableOpacity style={styles.cta} onPress={handleAddIdea}>
-            <Ionicons name="add" size={20} color="#1F1F1F" />
-            <Text style={styles.ctaText}>Добавить идею</Text>
+            <Text style={styles.ctaText}>ДОБАВИТЬ ИДЕЮ</Text>
           </TouchableOpacity>
         }
         contentContainerStyle={styles.list}
@@ -180,13 +182,13 @@ const styles = StyleSheet.create({
   back: { flexDirection: 'row', alignItems: 'center', width: 70 },
   backText: { fontSize: 15, color: '#1F1F1F', marginLeft: 2 },
   title: { fontSize: 18, fontWeight: '700', color: '#1F1F1F', flex: 1, textAlign: 'center' },
-  divider: { height: 1, backgroundColor: '#EDE6DC' },
+  divider: { height: 1, backgroundColor: '#BABABA', marginHorizontal: 25, marginBottom: 10 },
 
   list: { padding: 16, paddingBottom: 60 },
   cta: {
-    backgroundColor: '#FFA2DA',
-    borderRadius: 999,
-    paddingVertical: 14,
+    backgroundColor: '#1F1F1F',
+    borderRadius: 25,
+    paddingVertical: 18,
     paddingHorizontal: 20,
     alignItems: 'center',
     justifyContent: 'center',
@@ -194,7 +196,7 @@ const styles = StyleSheet.create({
     marginBottom: 18,
     gap: 6,
   },
-  ctaText: { fontWeight: '700', color: '#1F1F1F', fontSize: 16 },
+  ctaText: { fontWeight: '600', color: '#FFFFFF', fontSize: 16 },
 
   post: { marginBottom: 22 },
   postHead: { flexDirection: 'row', alignItems: 'center', marginBottom: 10 },
@@ -237,4 +239,9 @@ const styles = StyleSheet.create({
   flex1: { flex: 1 },
   fullSize: { width: '100%', height: '100%' },
   spacer: { width: 70 },
+  backArrowImage: {
+    width: 35, 
+    height: 30,
+    marginLeft: 10 
+  },
 });

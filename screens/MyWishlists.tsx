@@ -231,6 +231,7 @@ const styles = StyleSheet.create({
     right: 9,
     bottom: -70,
     height: 450,
+    zIndex: -1,
   },
   fish: {
     width: '100%',

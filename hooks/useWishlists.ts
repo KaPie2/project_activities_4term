@@ -15,7 +15,7 @@ export function useWishlists() {
     try {
       const { data, error: fetchError } = await supabase
         .from('wishlists')
-        .select('*')
+        .select('*, items(*)')
         .eq('user_id', userId)
         .order('created_at', { ascending: false });
 
@@ -25,7 +25,7 @@ export function useWishlists() {
 
       // Преобразуем данные в модели Wishlist
       const wishlistModels = data.map(item => 
-        new Wishlist(item.id, {
+        Object.assign(new Wishlist(item.id, {
           user_id: item.user_id,
           title: item.title,
           description: item.description,
@@ -33,7 +33,7 @@ export function useWishlists() {
           cover_image: item.cover_image,
           created_at: item.created_at,
           updated_at: item.updated_at,
-        })
+        }), { items: item.items || [] })
       );
 
       setWishlists(wishlistModels);
