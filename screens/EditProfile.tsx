@@ -14,7 +14,7 @@ import DateTimePicker from '@react-native-community/datetimepicker';
 
 export function EditProfileScreen() {
   const navigation = useNavigation<StackNavigationProp<RootStackParamList>>();
-  const { user, updateUserProfile, loading: authLoading } = useAuth();
+  const { user, updateUserProfile, loading: authLoading, signOut } = useAuth();
   
   const [loading, setLoading] = useState(false);
   const [name, setName] = useState('');
@@ -178,6 +178,29 @@ export function EditProfileScreen() {
     if (saved) {
       navigateToProfile();
     }
+  };
+
+  const handleLogout = async () => {
+    Alert.alert(
+      'Выход из аккаунта',
+      'Вы уверены, что хотите выйти? Все несохраненные данные будут потеряны.',
+      [
+        { 
+          text: 'Отмена', 
+          style: 'cancel' 
+        },
+        { 
+          text: 'Выйти', 
+          style: 'destructive',
+          onPress: async () => {
+            const result = await signOut();
+            if (!result.success) {
+              Alert.alert('Ошибка', result.error || 'Не удалось выйти из аккаунта');
+            }
+          }
+        }
+      ]
+    );
   };
 
   const performSave = async (): Promise<boolean> => {
@@ -394,7 +417,7 @@ export function EditProfileScreen() {
         style={{ flex: 1 }}
       >
         <ScrollView
-          scrollEnabled={false}
+          scrollEnabled={true}
           showsVerticalScrollIndicator={false}
           contentContainerStyle={styles.scrollContent}
         >
@@ -494,6 +517,12 @@ export function EditProfileScreen() {
                     style={styles.backArrowImage}
                     resizeMode="contain"
                   />
+                </TouchableOpacity>
+
+                {/* Кнопка выхода */}
+                <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
+                  <Ionicons name="log-out-outline" size={20} color="#666" />
+                  <Text style={styles.logoutText}>Выйти из аккаунта</Text>
                 </TouchableOpacity>
 
                 {/* Удалить аккаунт */}
@@ -938,5 +967,23 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '600',
     color: '#FFF',
+  },
+  logoutButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: 20,
+    paddingVertical: 12,
+    paddingHorizontal: 20,
+    backgroundColor: '#F5F5F5',
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#E0E0E0',
+  },
+  logoutText: {
+    marginLeft: 8,
+    fontSize: 14,
+    fontWeight: '500',
+    color: '#666',
   },
 });
