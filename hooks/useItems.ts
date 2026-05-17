@@ -32,8 +32,8 @@ export function useItems() {
                     price: item.price,
                     product_url: item.product_url,
                     status: item.status as ItemStatus,
-                    reserved_by: item.reserved_by,
-                    reserved_at: item.reserved_at,
+                    // reserved_by: item.reserved_by,
+                    // reserved_at: item.reserved_at,
                     created_at: item.created_at,
                     updated_at: item.updated_at
                 })
@@ -140,15 +140,15 @@ export function useItems() {
                 updateData.status = data.status;
             }
 
-            if (data.status === 'reserved' && data.reservedBy) {
-                updateData.reserved_by = data.reservedBy;
-                updateData.reserved_at = new Date().toISOString();
-            }
+            // if (data.status === 'reserved' && data.reservedBy) {
+            //     // updateData.reserved_by = data.reservedBy;
+            //     // updateData.reserved_at = new Date().toISOString();
+            // }
 
-            if (data.status === 'available' ){
-                updateData.reserved_by = null;
-                updateData.reserved_at = null;
-            }
+            // if (data.status === 'available' ){
+            //     updateData.reserved_by = null;
+            //     updateData.reserved_at = null;
+            // }
 
             updateData.updated_at = new Date().toISOString();
 
@@ -171,8 +171,8 @@ export function useItems() {
                 price: result.price,
                 product_url: result.product_url,
                 status: result.status,
-                reserved_by: result.reserved_by,
-                reserved_at: result.reserved_at,
+                // reserved_by: result.reserved_by,
+                // reserved_at: result.reserved_at,
                 created_at: result.created_at,
                 updated_at: result.updated_at,
             });

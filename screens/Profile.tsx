@@ -119,6 +119,7 @@ export function ProfileScreen() {
   const [wishlistsCount, setWishlistsCount] = useState(0);
   const [posts, setPosts] = useState<any[]>([]);
   const [loadingPosts, setLoadingPosts] = useState(false);
+  const [reservationsCount, setReservationsCount] = useState(0);
   
 
   const fetchCounts = async () => {
@@ -144,6 +145,23 @@ export function ProfileScreen() {
       setFollowingCount(following || 0);
     } catch (error) {
       console.error('Error fetching counts:', error);
+    }
+  };
+
+  const fetchReservationsCount = async () => {
+    try {
+      const userId = user?.id;
+      if (!userId) return;
+
+      const { count } = await supabase
+        .from('reservations')
+        .select('id', { count: 'exact', head: true })
+        .eq('user_id', userId)
+        .eq('status', 'active');
+
+      setReservationsCount(count || 0);
+    } catch (error) {
+      console.error('Error fetching reservations count:', error);
     }
   };
 
@@ -188,11 +206,12 @@ export function ProfileScreen() {
     if (user?.id) {
       fetchCounts();
       fetchUserPosts();
+      fetchReservationsCount();
     }
   }, [user]);
 
   const handleEditProfile = () => navigation.getParent()?.navigate('EditProfile');
-  const handleMyBookings = () => Alert.alert('Мои брони', 'В разработке');
+  const handleMyBookings = () => navigation.navigate('MyReservations');
   const handleMyWishlists = () => navigation.navigate('MyWishlists');
   const handleFavorites = () => navigation.navigate('LikedIdeas');
 
@@ -275,12 +294,17 @@ export function ProfileScreen() {
               <Text style={styles.statNumber}>{followingCount}</Text>
               <Text style={styles.statLabel}>Подписки</Text>
             </View>
-            <View style={styles.statDivider} />
-            <View style={styles.statItem}>
-              <Text style={styles.statNumber}>{followersCount}</Text>
-              <Text style={styles.statLabel}>Подписчики</Text>
-            </View>
+          <View style={styles.statDivider} />
+          <View style={styles.statItem}>
+            <Text style={styles.statNumber}>{followersCount}</Text>
+            <Text style={styles.statLabel}>Подписчики</Text>
           </View>
+          <View style={styles.statDivider} />
+          <View style={styles.statItem}>
+            <Text style={styles.statNumber}>{reservationsCount}</Text>
+            <Text style={styles.statLabel}>Бронирования</Text>
+          </View>
+        </View>
 
           {/* Кнопки действий */}
           <View style={styles.actionsRow}>

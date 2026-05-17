@@ -9,8 +9,8 @@ export class Item {
   price?: number;
   productUrl?: string;
   status: ItemStatus;
-  reservedBy?: string;
-  reservedAt?: string;
+  // reservedBy?: string;
+  // reservedAt?: string;
   createdAt: string;
   updatedAt: string;
 
@@ -23,8 +23,8 @@ export class Item {
     this.price = data.price;
     this.productUrl = data.product_url;
     this.status = data.status || 'available';
-    this.reservedBy = data.reserved_by;
-    this.reservedAt = data.reserved_at;
+    // this.reservedBy = data.reserved_by;
+    // this.reservedAt = data.reserved_at;
     this.createdAt = data.created_at;
     this.updatedAt = data.updated_at;
   }

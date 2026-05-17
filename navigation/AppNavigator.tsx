@@ -16,6 +16,7 @@ import { CreateWishlistModalScreen } from '../screens/CreateWishlistModal';
 import { MyWishlistsScreen } from '../screens/MyWishlists';
 import { LikedIdeasScreen } from '../screens/LikedIdeas';
 import { PlusMenuScreen } from '../screens/PlusMenu';
+import MyReservationsScreen from '../screens/MyReservations';
 
 export type MainTabParamList = {
   Notifications: undefined;
@@ -36,6 +37,7 @@ export type RootStackParamList = {
   MyWishlists: undefined;
   LikedIdeas: undefined;
   PlusMenu: undefined;
+  MyReservations: undefined;
 };
 
 const Tab = createBottomTabNavigator<MainTabParamList>();
@@ -214,6 +216,11 @@ export function AppNavigator() {
           cardOverlayEnabled: false,
           cardStyle: { backgroundColor: 'transparent' },
         }}
+      />
+      <RootStack.Screen 
+        name="MyReservations" 
+        component={MyReservationsScreen} 
+        options={{ headerShown: false }}
       />
     </RootStack.Navigator>
   );

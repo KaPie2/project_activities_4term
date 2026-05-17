@@ -1,15 +1,21 @@
 import React, { useState } from "react";
-import { View, Text, Image, TouchableOpacity, StyleSheet, Linking } from "react-native";
+import { View, Text, Image, TouchableOpacity, StyleSheet, Linking, Alert } from "react-native";
 import { FeedItem } from "@/hooks/useFeed";
+import { useReservations } from "@/hooks/useReservations";
+import { useAuth } from "@/contexts/AuthContext";
 
 interface FeedItemProps {
     item: FeedItem;
     onPressWishlist?: (wishlistId: string) => void;
+    onReservationSuccess?: () => void;
 }
 
-export function FeedItemComponent({ item, onPressWishlist }: FeedItemProps) {
+export function FeedItemComponent({ item, onPressWishlist, onReservationSuccess }: FeedItemProps) {
     const [isLiked, setIsLiked] = useState(false);
     const [likesCount, setLikesCount] = useState(0);
+    const { createReservation, loading: reservationLoading } = useReservations();
+    const { user } = useAuth();
+    const isReserved = item.status === 'reserved';
 
     const handleOpenProduct = () => {
         if (item.productUrl) {
@@ -24,6 +30,48 @@ export function FeedItemComponent({ item, onPressWishlist }: FeedItemProps) {
     const handleLike = () => {
         setLikesCount(prev => isLiked ? prev - 1 : prev + 1);
         setIsLiked(prev => !prev);
+    };
+
+    const handleBook = async () => {
+        console.log('handleBook called for item:', item.id, item.title);
+        console.log('User:', user?.id);
+        console.log('Item owner:', item.ownerId);
+        console.log('Is available:', item.isAvailable);
+        if (!user) {
+            Alert.alert('Ошибка', 'Для бронирования необходимо авторизоваться');
+            return;
+        }
+
+        if (item.ownerId === user.id) {
+            Alert.alert('Ошибка', 'Нельзя забронировать свой собственный товар');
+            return;
+        }
+
+        if (!item.isAvailable) {
+            Alert.alert('Ошибка', 'Этот товар уже забронирован');
+            return;
+        }
+
+        Alert.alert(
+            'Подтверждение бронирования',
+            `Вы уверены, что хотите забронировать "${item.title}"?`,
+            [
+                { text: 'Отмена', style: 'cancel' },
+                { 
+                    text: 'Забронировать', 
+                    style: 'default',
+                    onPress: async () => {
+                        const result = await createReservation(item.id);
+                        if (result.success) {
+                            Alert.alert('Успех', 'Товар успешно забронирован!');
+                            onReservationSuccess?.();
+                        } else {
+                            Alert.alert('Ошибка', result.error || 'Не удалось забронировать товар');
+                        }
+                    }
+                }
+            ]
+        );
     };
 
     return (
@@ -45,8 +93,22 @@ export function FeedItemComponent({ item, onPressWishlist }: FeedItemProps) {
                         </TouchableOpacity>
                     </View>
                 </View>
-                <TouchableOpacity style={styles.bookButton} activeOpacity={0.8}>
-                    <Text style={styles.bookButtonText}>Забронировать</Text>
+                <TouchableOpacity 
+                    style={[
+                        styles.bookButton, 
+                        !item.isAvailable && styles.bookButtonDisabled,
+                        reservationLoading && styles.bookButtonLoading
+                    ]} 
+                    activeOpacity={0.8}
+                    onPress={handleBook}
+                    disabled={!item.isAvailable || reservationLoading || item.ownerId === user?.id}
+                >
+                    <Text style={[
+                        styles.bookButtonText,
+                        !item.isAvailable && styles.bookButtonTextDisabled
+                    ]}>
+                        {!item.isAvailable ? 'Забронировано' : 'Забронировать'}
+                    </Text>
                 </TouchableOpacity>
             </View>
 
@@ -58,6 +120,11 @@ export function FeedItemComponent({ item, onPressWishlist }: FeedItemProps) {
                     style={styles.image}
                     resizeMode={item.imageUrl ? 'cover' : 'contain'}
                 />
+                {!item.isAvailable && (
+                    <View style={styles.reservedBadge}>
+                        <Text style={styles.reservedBadgeText}>ЗАБРОНИРОВАНО</Text>
+                    </View>
+                )}
             </View>
 
             {/* Информация о товаре */}
@@ -158,10 +225,20 @@ const styles = StyleSheet.create({
         borderWidth: 1.5,
         borderColor: '#1A1A1A',
     },
+    bookButtonDisabled: {
+        backgroundColor: '#E8E3DC',
+        borderColor: '#CCCCCC',
+    },
+    bookButtonLoading: {
+        opacity: 0.7,
+    },
     bookButtonText: {
         fontSize: 12,
         fontWeight: '700',
         color: '#1A1A1A',
+    },
+    bookButtonTextDisabled: {
+        color: '#666666',
     },
     imageContainer: {
         width: '100%',
@@ -169,16 +246,27 @@ const styles = StyleSheet.create({
         backgroundColor: '#EDE9E3',
         borderRadius: 16,
         overflow: 'hidden',
+        position: 'relative',
     },
     image: {
         width: '100%',
         height: '100%',
     },
-    imagePlaceholder: {
-        flex: 1,
-        justifyContent: 'center',
-        alignItems: 'center',
+    reservedBadge: {
+        position: 'absolute',
+        top: 10,
+        right: 10,
+        backgroundColor: 'rgba(0, 0, 0, 0.7)',
+        paddingHorizontal: 10,
+        paddingVertical: 5,
+        borderRadius: 12,
     },
+    reservedBadgeText: {
+        color: 'white',
+        fontSize: 10,
+        fontWeight: 'bold',
+    },
+    // ... остальные стили остаются без изменений
     content: {
         paddingTop: 14,
         paddingBottom: 6,
@@ -228,4 +316,6 @@ const styles = StyleSheet.create({
         backgroundColor: '#EAE6DF',
         marginVertical: 4,
     },
+    reservedButtonDisabled: { backgroundColor: '#CCCCCC' },
+    reservedButtonTextDisabled: { color: '#666666' }
 });

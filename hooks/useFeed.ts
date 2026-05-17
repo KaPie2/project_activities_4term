@@ -30,8 +30,8 @@ export function useFeed(){
             price: data.price,
             product_url: data.product_url,
             status: data.status,
-            reserved_by: data.reserved_by,
-            reserved_at: data.reserved_at,
+            // reserved_by: data.reserved_by,
+            // reserved_at: data.reserved_at,
             created_at: data.created_at,
             updated_at: data.updated_at,
     });
@@ -79,7 +79,6 @@ export function useFeed(){
             )
             )
         `)
-        .eq('status', 'available')
         .order('created_at', { ascending: false })
         .range(from, to);
 
